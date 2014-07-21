@@ -163,7 +163,7 @@
 
                         // Add a key
                         key = aggField.join("/") + "_" + xField.join("/") + "_" + yField.join("/") + "_" + zField.join("/");
-                        // See if this field has already been added. 
+                        // See if this field has already been added.
                         for (k = 0; k < returnData.length; k += 1) {
                             if (returnData[k].key === key) {
                                 foundIndex = k;
@@ -201,7 +201,8 @@
                                 zValueList: [],
                                 cValueList: [],
                                 fill: {},
-                                stroke: {}
+                                stroke: {},
+                                lana: d
                             };
                             returnData.push(newRow);
                             foundIndex = returnData.length - 1;
