@@ -5,6 +5,10 @@
     dimple._removeTooltip = function (e, shape, chart, series) {
         if (chart._tooltipGroup) {
             chart._tooltipGroup.remove();
+
+            if (typeof series.removeTooltip === 'function') {
+                series.removeTooltip();
+            }
         }
     };
     /*jslint unparam: false */
