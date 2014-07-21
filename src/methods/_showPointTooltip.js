@@ -71,6 +71,6 @@
 
         if (typeof series.showTooltip === 'function') {
             position = [translateX, translateY];
-            series.showTooltip(e, shape, chart, series, position, i);
+            series.showTooltip(e, shape, chart, series, position);
         }
     };

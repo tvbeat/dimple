@@ -7,17 +7,12 @@
         var textMargin = 5,
             // The margin between the ring and the popup
             popupMargin = 10,
-           // The popup animation duration in ms
-            animDuration = 750,
             // Collect some facts about the highlighted bar
             selectedShape = d3.select(shape),
             x = parseFloat(selectedShape.attr("x")),
             y = parseFloat(selectedShape.attr("y")),
             width = parseFloat(selectedShape.attr("width")),
             height = parseFloat(selectedShape.attr("height")),
-            opacity = selectedShape.attr("opacity"),
-            fill = selectedShape.attr("fill"),
-            dropDest = series._dropLineOrigin(),
 
             // The running y value for the text elements
             yRunning = 0,
@@ -27,15 +22,12 @@
             // Values to shift the popup
             position,
             translateX,
-            translateY,
-            offset;
+            translateY;
 
         if (chart._tooltipGroup !== null && chart._tooltipGroup !== undefined) {
             chart._tooltipGroup.remove();
         }
         chart._tooltipGroup = chart.svg.append("g");
-
-        offset = (series._isStacked() ? 1 : width / 2);
 
         // Shift the popup around to avoid overlapping the svg edge
         if (x + width + textMargin + popupMargin + w < parseFloat(chart.svg.node().getBBox().width)) {
@@ -62,6 +54,6 @@
 
         if (typeof series.showTooltip === 'function') {
             position = [translateX, translateY];
-            series.showTooltip(e, shape, chart, series, position, i);
+            series.showTooltip(e, shape, chart, series, position);
         }
     };
