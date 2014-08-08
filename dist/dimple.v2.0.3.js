@@ -3453,6 +3453,7 @@
                 },
                 showTooltipWithLine,
                 leaveData = {},
+                point,
                 grid,
                 data = series._positionData,
                 lineData = [],
@@ -3470,7 +3471,7 @@
                 updated,
                 removed,
                 orderedSeriesArray,
-                onEnter = function () {
+                onEnter = function (position) {
                     return function (e, shape, chart, series) {
                         var circle = $("circle[id='" + e.key + "']"),
                             //parse series ID
@@ -3478,9 +3479,8 @@
                             length = circle.attr('class').length,
                             seriesId = circle.attr('class').substring(startIndex, length);
                         setActiveLine(seriesId);
-
                         d3.select(shape).style("opacity", 1);
-                        dimple._showPointTooltip(e, shape, chart, series);
+                        dimple._showPointTooltip(e, shape, chart, series, position);
                     };
                 },
                 onLeave = function (lineData) {
@@ -3655,10 +3655,9 @@
                     cx = null,
                     activeId = $('path.active').attr('id'),
                     pointsNumber = chart.svg.selectAll('circle.dimple-' + activeId)[0].length,
-                    width = d3.select('g.dimple-gridline')[0][0].getBBox().width,
-                    offset = parseInt(width / (pointsNumber * 2), 10),
+                    width        = d3.select('g.dimple-gridline')[0][0].getBBox().width,
+                    offset       = parseInt(width / ((pointsNumber - 1) * 2), 10),
                     points,
-                    point,
                     x;
 
                 points = chart.svg.selectAll('circle.dimple-' + activeId)[0].filter(function(item) {
@@ -3667,36 +3666,52 @@
                 });
 
                 if (points.length) {
-                    point = points[0];
-                    x = parseInt(point.attributes.cx.value, 10) + 1;
-                    d3.select(".verticalLine").attr("transform", function () {
-                        return "translate(" + x + ",0)";
-                    });
-                    // hide all visible points
-                    $('circle').css('opacity', 0);
-                    onEnter()(point.__data__, point, chart, series);
+                    if (point !== points[0] || point === null) {
+                        point = points[0];
+                        x = parseInt(point.attributes.cx.value, 10) + 1;
+                        d3.select(".verticalLine").attr("transform", function () {
+                            return "translate(" + x + ",0)";
+                        });
+                        // debugger
+                        // hide all visible points
+                        $('circle').css('opacity', 0);
+                        onEnter(d3.mouse(this))(point.__data__, point, chart, series);
 
-                    leaveData.data   = point.__data__;
-                    leaveData.point  = point;
-                    leaveData.chart  = chart;
-                    leaveData.series = series;
+                        leaveData.data   = point.__data__;
+                        leaveData.point  = point;
+                        leaveData.chart  = chart;
+                        leaveData.series = series;
+                    } else {
+                        series.updateTooltipPosition(d3.mouse(this));
+                    }
 
-                } else {
-                    d3.select(".verticalLine").attr("transform", function () {
-                        return "translate(-1,0)";
-                    });
                 }
-
             };
 
             d3.select("svg")
                 .on("mousemove", showTooltipWithLine)
-                .on("mouseleave", function() {
-                    d3.select(".verticalLine").attr("transform", function () {
-                        return "translate(-1,0)";
-                    });
-                    onLeave({data: []})(leaveData.data, leaveData.point, leaveData.chart, leaveData.series);
-                    $('circle').css('opacity', 0);
+                .on("mouseleave", function(e) {
+                    if (!e && window.event) {
+                        e = event;
+                    }
+                    var goingto = e.relatedTarget || event.toElement,
+                        pos;
+
+                    //unless target leave is tooltip
+                    if ($('div.chart-tooltip').has(goingto).length === 0) {
+                        onLeave({data: []})(leaveData.data, leaveData.point, leaveData.chart, leaveData.series);
+                        setActiveLine(false);
+                        point = null;
+
+                        d3.select(".verticalLine").attr("transform", function () {
+                            return "translate(-1,0)";
+                        });
+                        $('circle').css('opacity', 0);
+                    } else {
+                        pos = d3.mouse(this);
+                        pos[0] += d3.mouse($('div.chart-tooltip')[0])[0];
+                        onEnter(d3.mouse(this))(point.__data__, point, chart, series);
+                    }
                 });
 
             grid = d3.select("svg g.dimple-gridline").node().getBBox();
@@ -4654,7 +4669,7 @@
     // Copyright: 2014 PMSI-AlignAlytics
     // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
     // Source: /src/methods/_showPointTooltip.js
-    dimple._showPointTooltip = function (e, shape, chart, series) {
+    dimple._showPointTooltip = function (e, shape, chart, series, positionArray) {
         // The margin between the text and the box
         var textMargin = 5,
             // The margin between the ring and the popup
@@ -4723,7 +4738,12 @@
         }
 
         if (typeof series.showTooltip === 'function') {
-            position = [translateX, translateY];
+            if (positionArray) {
+                position = positionArray;
+            } else {
+                position = [translateX, translateY];
+            }
+
             series.showTooltip(e, shape, chart, series, position);
         }
     };
