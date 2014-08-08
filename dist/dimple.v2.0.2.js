@@ -3423,6 +3423,7 @@
     // Copyright: 2014 PMSI-AlignAlytics
     // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
     // Source: /src/objects/plot/line.js
+    /*global  $*/
     dimple.plot.line = {
 
         // By default the values are not stacked
@@ -3436,8 +3437,24 @@
 
         // Draw the axis
         draw: function (chart, series, duration) {
-            // Get the position data
-            var data = series._positionData,
+                // Get the position data
+            var setActiveLine = function(id) {
+                    if ($('path.dimple-line.active').length || id === false) {
+                         //remove class active
+                        if ($('path.dimple-line.active').attr('class')) {
+                            $('path.dimple-line.active').attr('class', $('path.dimple-line.active').attr('class').replace(' active', ''));
+                        }
+                    }
+
+                    if (id !== false) {
+                        $('path#' + id).attr('class', $('path#' + id).attr('class') + " active");
+                    }
+
+                },
+                showTooltipWithLine,
+                leaveData = {},
+                grid,
+                data = series._positionData,
                 lineData = [],
                 theseShapes = null,
                 className = "dimple-series-" + chart.series.indexOf(series),
@@ -3455,6 +3472,13 @@
                 orderedSeriesArray,
                 onEnter = function () {
                     return function (e, shape, chart, series) {
+                        var circle = $("circle[id='" + e.key + "']"),
+                            //parse series ID
+                            startIndex = circle.attr('class').lastIndexOf("dimple-") + 7,
+                            length = circle.attr('class').length,
+                            seriesId = circle.attr('class').substring(startIndex, length);
+                        setActiveLine(seriesId);
+
                         d3.select(shape).style("opacity", 1);
                         dimple._showPointTooltip(e, shape, chart, series);
                     };
@@ -3607,6 +3631,9 @@
                 .attr("d", function (d) {
                     return d.entry;
                 })
+                .on('mouseenter', function(d) {
+                    setActiveLine(d.key[0]);
+                })
                 .call(function () {
                     // Apply formats optionally
                     if (!chart.noFormats) {
@@ -3621,6 +3648,68 @@
                     d.markerData = d.data;
                     drawMarkers(d);
                 });
+
+            //custom vertical lines
+            showTooltipWithLine = function () {
+                var xPos = d3.mouse(this)[0],
+                    cx = null,
+                    activeId = $('path.active').attr('id'),
+                    pointsNumber = chart.svg.selectAll('circle.dimple-' + activeId)[0].length,
+                    width = d3.select('g.dimple-gridline')[0][0].getBBox().width,
+                    offset = parseInt(width / (pointsNumber * 2), 10),
+                    points,
+                    point,
+                    x;
+
+                points = chart.svg.selectAll('circle.dimple-' + activeId)[0].filter(function(item) {
+                    cx = parseInt(item.attributes.cx.value, 10);
+                    return cx >= (xPos - offset) && cx <= (xPos + offset);
+                });
+
+                if (points.length) {
+                    point = points[0];
+                    x = parseInt(point.attributes.cx.value, 10) + 1;
+                    d3.select(".verticalLine").attr("transform", function () {
+                        return "translate(" + x + ",0)";
+                    });
+                    // hide all visible points
+                    $('circle').css('opacity', 0);
+                    onEnter()(point.__data__, point, chart, series);
+
+                    leaveData.data   = point.__data__;
+                    leaveData.point  = point;
+                    leaveData.chart  = chart;
+                    leaveData.series = series;
+
+                } else {
+                    d3.select(".verticalLine").attr("transform", function () {
+                        return "translate(-1,0)";
+                    });
+                }
+
+            };
+
+            d3.select("svg")
+                .on("mousemove", showTooltipWithLine)
+                .on("mouseleave", function() {
+                    d3.select(".verticalLine").attr("transform", function () {
+                        return "translate(-1,0)";
+                    });
+                    onLeave({data: []})(leaveData.data, leaveData.point, leaveData.chart, leaveData.series);
+                    $('circle').css('opacity', 0);
+                });
+
+            grid = d3.select("svg g.dimple-gridline").node().getBBox();
+
+            d3.select("svg > g").append('line')
+                .attr({
+                    'x1': -1,
+                    'y1': grid.y,
+                    'x2': -1,
+                    'y2': grid.height + 20
+                })
+                .attr("stroke", "lightgray")
+                .attr('class', 'verticalLine');
 
             // Update
             updated = chart._handleTransition(theseShapes, duration, chart)
@@ -3648,8 +3737,6 @@
 
         }
     };
-
-
     // Copyright: 2014 PMSI-AlignAlytics
     // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
     // Source: /src/methods/_addGradient.js
