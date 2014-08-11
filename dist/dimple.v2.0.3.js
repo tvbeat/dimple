@@ -3437,22 +3437,8 @@
 
         // Draw the axis
         draw: function (chart, series, duration) {
-                // Get the position data
-            var setActiveLine = function(id) {
-                    if ($('path.dimple-line.active').length || id === false) {
-                         //remove class active
-                        if ($('path.dimple-line.active').attr('class')) {
-                            $('path.dimple-line.active').attr('class', $('path.dimple-line.active').attr('class').replace(' active', ''));
-                        }
-                    }
-
-                    if (id !== false) {
-                        $('path#' + id).attr('class', $('path#' + id).attr('class') + " active");
-                    }
-
-                },
-                showTooltipWithLine,
-                leaveData = {},
+            // Get the position data
+            var leaveData = {},
                 point,
                 grid,
                 data = series._positionData,
@@ -3471,13 +3457,15 @@
                 updated,
                 removed,
                 orderedSeriesArray,
+
+                setActiveLine = function(id) {
+                    d3.selectAll('path.dimple-line').classed('active', false)
+                        .filter(function() { return this.id === id; })
+                        .classed('active', true);
+                },
                 onEnter = function (position) {
                     return function (e, shape, chart, series) {
-                        var circle = $("circle[id='" + e.key + "']"),
-                            //parse series ID
-                            startIndex = circle.attr('class').lastIndexOf("dimple-") + 7,
-                            length = circle.attr('class').length,
-                            seriesId = circle.attr('class').substring(startIndex, length);
+                        var seriesId = e.aggField[0];
                         setActiveLine(seriesId);
                         d3.select(shape).style("opacity", 1);
                         dimple._showPointTooltip(e, shape, chart, series, position);
@@ -3485,8 +3473,10 @@
                 },
                 onLeave = function (lineData) {
                     return function (e, shape, chart, series) {
-                        d3.select(shape).style("opacity", (series.lineMarkers || lineData.data.length < 2 ? dimple._helpers.opacity(e, chart, series) : 0));
-                        dimple._removeTooltip(e, shape, chart, series);
+                        if (series) {
+                            d3.select(shape).style("opacity", (series.lineMarkers || lineData.data.length < 2 ? dimple._helpers.opacity(e, chart, series) : 0));
+                            dimple._removeTooltip(e, shape, chart, series);
+                        }
                     };
                 },
                 drawMarkers = function (d) {
@@ -3510,6 +3500,66 @@
                         .x(function (d) { return (series.x._hasCategories() || !originProperty ? d.x : series.x[originProperty]); })
                         .y(function (d) { return (series.y._hasCategories() || !originProperty ? d.y : series.y[originProperty]); })
                         .interpolate(inter);
+                },
+                //custom vertical lines
+                showTooltipWithLine = function () {
+                    var xPos = d3.mouse(this)[0],
+                        cx = null,
+                        activeId = $('path.active').attr('id'),
+                        pointsNumber = chart.svg.selectAll('circle.dimple-' + activeId)[0].length,
+                        width        = d3.select('g.dimple-gridline')[0][0].getBBox().width,
+                        offset       = parseInt(width / ((pointsNumber - 1) * 2), 10),
+                        points,
+                        x;
+
+                    points = chart.svg.selectAll('circle.dimple-' + activeId)[0].filter(function(item) {
+                        cx = parseInt(item.attributes.cx.value, 10);
+                        return cx >= (xPos - offset) && cx <= (xPos + offset);
+                    });
+
+                    if (points.length) {
+                        if (point !== points[0] || point === null) {
+                            point = points[0];
+                            x = parseInt(point.attributes.cx.value, 10) + 1;
+                            d3.select(".verticalLine").attr("transform", function () {
+                                return "translate(" + x + ",0)";
+                            });
+                            // debugger
+                            // hide all visible points
+                            $('circle').css('opacity', 0);
+                            onEnter(d3.mouse(this))(point.__data__, point, chart, series);
+
+                            leaveData.data   = point.__data__;
+                            leaveData.point  = point;
+                            leaveData.chart  = chart;
+                            leaveData.series = series;
+                        } else {
+                            series.updateTooltipPosition(d3.mouse(this));
+                        }
+                    }
+                },
+                hideTooltipWithLine = function(e) {
+                    if (!e && window.event) {
+                        e = event;
+                    }
+                    var goingto = e.relatedTarget || event.toElement,
+                        pos;
+
+                    //unless target leave is tooltip
+                    if ($('div.chart-tooltip').has(goingto).length === 0) {
+                        onLeave({data: []})(leaveData.data, leaveData.point, leaveData.chart, leaveData.series);
+                        setActiveLine(false);
+                        point = null;
+
+                        d3.select(".verticalLine").attr("transform", function () {
+                            return "translate(-1,0)";
+                        });
+                        $('circle').css('opacity', 0);
+                    } else {
+                        pos = d3.mouse(this);
+                        pos[0] += d3.mouse($('div.chart-tooltip')[0])[0];
+                        onEnter(d3.mouse(this))(point.__data__, point, chart, series);
+                    }
                 };
 
             // Handle the special interpolation handling for step
@@ -3649,70 +3699,9 @@
                     drawMarkers(d);
                 });
 
-            //custom vertical lines
-            showTooltipWithLine = function () {
-                var xPos = d3.mouse(this)[0],
-                    cx = null,
-                    activeId = $('path.active').attr('id'),
-                    pointsNumber = chart.svg.selectAll('circle.dimple-' + activeId)[0].length,
-                    width        = d3.select('g.dimple-gridline')[0][0].getBBox().width,
-                    offset       = parseInt(width / ((pointsNumber - 1) * 2), 10),
-                    points,
-                    x;
-
-                points = chart.svg.selectAll('circle.dimple-' + activeId)[0].filter(function(item) {
-                    cx = parseInt(item.attributes.cx.value, 10);
-                    return cx >= (xPos - offset) && cx <= (xPos + offset);
-                });
-
-                if (points.length) {
-                    if (point !== points[0] || point === null) {
-                        point = points[0];
-                        x = parseInt(point.attributes.cx.value, 10) + 1;
-                        d3.select(".verticalLine").attr("transform", function () {
-                            return "translate(" + x + ",0)";
-                        });
-                        // debugger
-                        // hide all visible points
-                        $('circle').css('opacity', 0);
-                        onEnter(d3.mouse(this))(point.__data__, point, chart, series);
-
-                        leaveData.data   = point.__data__;
-                        leaveData.point  = point;
-                        leaveData.chart  = chart;
-                        leaveData.series = series;
-                    } else {
-                        series.updateTooltipPosition(d3.mouse(this));
-                    }
-
-                }
-            };
-
             d3.select("svg")
                 .on("mousemove", showTooltipWithLine)
-                .on("mouseleave", function(e) {
-                    if (!e && window.event) {
-                        e = event;
-                    }
-                    var goingto = e.relatedTarget || event.toElement,
-                        pos;
-
-                    //unless target leave is tooltip
-                    if ($('div.chart-tooltip').has(goingto).length === 0) {
-                        onLeave({data: []})(leaveData.data, leaveData.point, leaveData.chart, leaveData.series);
-                        setActiveLine(false);
-                        point = null;
-
-                        d3.select(".verticalLine").attr("transform", function () {
-                            return "translate(-1,0)";
-                        });
-                        $('circle').css('opacity', 0);
-                    } else {
-                        pos = d3.mouse(this);
-                        pos[0] += d3.mouse($('div.chart-tooltip')[0])[0];
-                        onEnter(d3.mouse(this))(point.__data__, point, chart, series);
-                    }
-                });
+                .on("mouseleave", hideTooltipWithLine);
 
             grid = d3.select("svg g.dimple-gridline").node().getBBox();
 
@@ -3749,7 +3738,6 @@
 
             // Save the shapes to the series array
             series.shapes = theseShapes;
-
         }
     };
     // Copyright: 2014 PMSI-AlignAlytics
