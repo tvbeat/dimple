@@ -6,14 +6,11 @@
         var textMargin = 5,
             // The margin between the ring and the popup
             popupMargin = 10,
-            // The popup animation duration in ms
-            animDuration = 750,
             // Collect some facts about the highlighted bubble
             selectedShape = d3.select(shape),
             cx = parseFloat(selectedShape.attr("cx")),
             cy = parseFloat(selectedShape.attr("cy")),
             r = parseFloat(selectedShape.attr("r")),
-            fill = selectedShape.attr("stroke"),
 
             // The running y value for the text elements
             y = 0,

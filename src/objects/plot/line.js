@@ -18,6 +18,8 @@
             // Get the position data
             var leaveData = {},
                 point,
+                points,
+                xVal,
                 grid,
                 xAxis,
                 data = series._positionData,
@@ -50,10 +52,9 @@
                         dimple._showPointTooltip(e, shape, chart, series, position);
                     };
                 },
-                onLeave = function (lineData) {
+                onLeave = function () {
                     return function (e, shape, chart, series) {
                         if (series) {
-                            //d3.select(shape).style("opacity", (series.lineMarkers || lineData.data.length < 2 ? dimple._helpers.opacity(e, chart, series) : 0));
                             dimple._removeTooltip(e, shape, chart, series);
                         }
                     };
@@ -147,16 +148,50 @@
                         onEnter(d3.mouse(this))(point.__data__, point, chart, series);
                     }
                 },
+                createTimePointButton = function(onClick, xPos, sign, className) {
+                    var group = d3.select('svg > g').append('g')
+                        .attr('class', className)
+                        .on('click', onClick)
+                        .attr('transform', "translate(" + xPos + ", 0)");
+
+                    group.append('rect')
+                        .attr('width', '16')
+                        .attr('height', '16')
+                        .attr('fill', '#666666')
+                        .attr('style', 'cursor: pointer;');
+
+                    group.append('text')
+                        .attr({
+                            'x': 8,
+                            'y': 12
+                        })
+                        .attr('style', 'cursor: pointer;text-anchor: middle; font-family: sans-serif; font-size: 13px;')
+                        .attr('fill', 'white')
+                        .text(sign);
+                },
+                deselectTimePoint = function() {
+                    d3.selectAll('path.dimple-line').classed('grayed', false);
+                    $('g.timePointSelect.remove').remove();
+                    $('line.selected').remove();
+                    chart.svg.selectAll('circle')
+                        .style('opacity', 0)
+                        .classed('stayVisible', false);
+                    d3.select(".timePointSelect").attr("transform", function () {
+                        return "translate(" + (leaveData.point.cx.baseVal.value - 8) + ",0)";
+                    });
+
+                    series.setTimePoint(null);
+                },
                 selectTimePoint = function() {
-                    if(!this.classList.contains("remove")) {
+                    if (!this.classList.contains("remove")) {
                         // clear currently selected point
-                        deselectTimePoint()
+                        deselectTimePoint();
 
                         // show circles for all series
-                        var xCoordinate = leaveData.point.cx.baseVal.value
-                        var points = chart.svg.selectAll('circle')[0].filter(function(item) {
-                            return leaveData.point.cx.baseVal.value == item.cx.baseVal.value
-                        });
+                        var xCoordinate = leaveData.point.cx.baseVal.value,
+                            points = chart.svg.selectAll('circle')[0].filter(function(item) {
+                                return leaveData.point.cx.baseVal.value === item.cx.baseVal.value;
+                            });
                         d3.selectAll(points)
                             .style('opacity', 1)
                             .classed('stayVisible', true);
@@ -174,42 +209,8 @@
 
                         // box for removing selected time point
                         createTimePointButton(deselectTimePoint, (xCoordinate - 8), 'x', 'timePointSelect remove');
-                        series.setTimePoint(leaveData.data.lana['time.interval'])
+                        series.setTimePoint(leaveData.data.lana['time.interval']);
                     }
-                },
-                deselectTimePoint = function() {
-                    d3.selectAll('path.dimple-line').classed('grayed', false)
-                    $('g.timePointSelect.remove').remove()
-                    $('line.selected').remove()
-                    chart.svg.selectAll('circle')
-                        .style('opacity', 0)
-                        .classed('stayVisible', false);
-                    d3.select(".timePointSelect").attr("transform", function () {
-                        return "translate("+(leaveData.point.cx.baseVal.value - 8) +",0)";
-                    });
-
-                    series.setTimePoint(null);
-                },
-                createTimePointButton = function(onClick, xPos, sign, className) {
-                    var group = d3.select('svg > g').append('g')
-                        .attr('class', className)
-                        .on('click', onClick)
-                        .attr('transform', "translate("+xPos+", 0)");
-
-                    group.append('rect')
-                        .attr('width', '16')
-                        .attr('height', '16')
-                        .attr('fill', '#666666')
-                        .attr('style', 'cursor: pointer;');
-
-                    group.append('text')
-                        .attr({
-                            'x': 8,
-                            'y': 12,
-                        })
-                        .attr('style', 'cursor: pointer;text-anchor: middle; font-family: sans-serif; font-size: 13px;')
-                        .attr('fill', 'white')
-                        .text(sign);
                 };
 
             // Handle the special interpolation handling for step
@@ -350,11 +351,11 @@
                 });
 
             if ($('g.timePointSelect.remove').length) {
-                d3.selectAll('path.dimple-line').classed('grayed', true)
+                d3.selectAll('path.dimple-line').classed('grayed', true);
                 //show point for new added series/line
-                var xVal = d3.select('circle.stayVisible')[0][0].cx.baseVal.value
-                var points = chart.svg.selectAll('circle')[0].filter(function(item) {
-                    return xVal == item.cx.baseVal.value
+                xVal = d3.select('circle.stayVisible')[0][0].cx.baseVal.value;
+                points = chart.svg.selectAll('circle')[0].filter(function(item) {
+                    return xVal === item.cx.baseVal.value;
                 });
                 d3.selectAll(points).style('opacity', 1).classed('stayVisible', true);
             }
