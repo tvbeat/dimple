@@ -29,23 +29,6 @@
         }
         chart._tooltipGroup = chart.svg.append("g");
 
-        // Add a ring around the data point
-        chart._tooltipGroup.append("circle")
-            .attr("cx", cx)
-            .attr("cy", cy)
-            .attr("r", r)
-            .attr("opacity", 0)
-            .style("fill", "none")
-            .style("stroke", fill)
-            .style("stroke-width", 1)
-            .transition()
-            .duration(animDuration / 2)
-            .ease("linear")
-            .attr("opacity", 1)
-            .attr("r", r + series.lineWeight + 2)
-            .style("stroke-width", 2);
-
-
         // Shift the popup around to avoid overlapping the svg edge
         if (cx + r + textMargin + popupMargin + w < parseFloat(chart.svg.node().getBBox().width)) {
             // Draw centre right
