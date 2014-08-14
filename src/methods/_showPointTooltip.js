@@ -6,14 +6,11 @@
         var textMargin = 5,
             // The margin between the ring and the popup
             popupMargin = 10,
-            // The popup animation duration in ms
-            animDuration = 750,
             // Collect some facts about the highlighted bubble
             selectedShape = d3.select(shape),
             cx = parseFloat(selectedShape.attr("cx")),
             cy = parseFloat(selectedShape.attr("cy")),
             r = parseFloat(selectedShape.attr("r")),
-            fill = selectedShape.attr("stroke"),
 
             // The running y value for the text elements
             y = 0,
@@ -28,23 +25,6 @@
             chart._tooltipGroup.remove();
         }
         chart._tooltipGroup = chart.svg.append("g");
-
-        // Add a ring around the data point
-        chart._tooltipGroup.append("circle")
-            .attr("cx", cx)
-            .attr("cy", cy)
-            .attr("r", r)
-            .attr("opacity", 0)
-            .style("fill", "none")
-            .style("stroke", fill)
-            .style("stroke-width", 1)
-            .transition()
-            .duration(animDuration / 2)
-            .ease("linear")
-            .attr("opacity", 1)
-            .attr("r", r + series.lineWeight + 2)
-            .style("stroke-width", 2);
-
 
         // Shift the popup around to avoid overlapping the svg edge
         if (cx + r + textMargin + popupMargin + w < parseFloat(chart.svg.node().getBBox().width)) {
