@@ -3460,6 +3460,7 @@
                 updated,
                 removed,
                 orderedSeriesArray,
+                updateTooltipPosition,
 
                 setActiveLine = function(id) {
                     d3.selectAll('path.dimple-line').classed('active', false)
@@ -3540,7 +3541,7 @@
                             leaveData.chart  = chart;
                             leaveData.series = series;
                         } else {
-                            series.updateTooltipPosition(d3.mouse(this));
+                            updateTooltipPosition(d3.mouse(this));
                         }
                     }
                 },
@@ -3634,6 +3635,12 @@
                         series.setTimePoint(leaveData.data.lana['time.interval']);
                     }
                 };
+
+            if (series.updateTooltipPosition) {
+                updateTooltipPosition = series.updateTooltipPosition.bind(series);
+            } else {
+                updateTooltipPosition = function() {};
+            }
 
             // Handle the special interpolation handling for step
             interpolation =  (series.interpolation === "step" ? "step-after" : series.interpolation);
