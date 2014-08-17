@@ -275,7 +275,7 @@
                                 .each(function () {
                                     var rec = this.getBBox();
                                     d3.select(this)
-                                        .attr("transform", "rotate(90," + rec.x + "," + (rec.y + (rec.height / 2)) + ") translate(-5, 0)");
+                                        .attr("transform", "rotate(45," + rec.x + "," + (rec.y + (rec.height / 2)) + ") translate(-5, 0)");
                                 });
                         } else {
                             // For redraw operations we need to clear the transform
@@ -299,7 +299,7 @@
                                 .each(function () {
                                     var rec = this.getBBox();
                                     d3.select(this)
-                                        .attr("transform", "rotate(90," + (rec.x + rec.width) + "," + (rec.y + (rec.height / 2)) + ") translate(5, 0)");
+                                        .attr("transform", "rotate(45," + (rec.x + rec.width) + "," + (rec.y + (rec.height / 2)) + ") translate(5, 0)");
                                 });
                         } else {
                             // For redraw operations we need to clear the transform
