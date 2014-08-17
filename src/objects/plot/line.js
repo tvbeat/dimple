@@ -217,7 +217,7 @@
             if (series.updateTooltipPosition) {
                 updateTooltipPosition = series.updateTooltipPosition.bind(series);
             } else {
-                updateTooltipPosition = function() {};
+                updateTooltipPosition = function(x) { return x; };
             }
 
             // Handle the special interpolation handling for step
