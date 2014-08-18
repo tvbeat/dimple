@@ -177,21 +177,16 @@
                     chart.svg.selectAll('circle')
                         .style('opacity', 0)
                         .classed('stayVisible', false);
-                    if (leaveData.point) {
-                        d3.select(".timePointSelect").attr("transform", function () {
-                            return "translate(" + (leaveData.point.cx.baseVal.value - 8) + ",0)";
-                        });
-                    }
 
                     if (typeof series.setTimePoint === 'function') {
                         series.setTimePoint(null);
                     }
                 },
                 selectTimePoint = function() {
-                    if (!this.classList.contains("remove")) {
-                        // clear currently selected point
-                        deselectTimePoint();
+                    // clear currently selected point
+                    deselectTimePoint();
 
+                    if (!this.classList.contains("remove")) {
                         // show circles for all series
                         var xCoordinate = leaveData.point.cx.baseVal.value,
                             points = chart.svg.selectAll('circle')[0].filter(function(item) {
