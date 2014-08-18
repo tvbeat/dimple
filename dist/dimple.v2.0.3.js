@@ -651,7 +651,7 @@
         // Copyright: 2014 PMSI-AlignAlytics
         // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
         // Source: /src/objects/chart/methods/_axisIndex.js
-        // Return the ordinal value of the passed axis.  If an orientation is passed, return the order for the 
+        // Return the ordinal value of the passed axis.  If an orientation is passed, return the order for the
         // specific orientation, otherwise return the order from all axes.  Returns -1 if the passed axis isn't part of the collection
         this._axisIndex = function (axis, orientation) {
 
@@ -2445,7 +2445,7 @@
                     xIndex += 1;
                 } else if (axis.position === "y" && !this.y.hidden) {
                     if (this._deepMatch(axis)) {
-                        // Set the x co-ordinate for the y axis 
+                        // Set the x co-ordinate for the y axis
                         if (yIndex === 0) {
                             coord.x = firstOrig.x;
                         } else if (yIndex === 1) {
@@ -3601,17 +3601,16 @@
                     chart.svg.selectAll('circle')
                         .style('opacity', 0)
                         .classed('stayVisible', false);
-                    d3.select(".timePointSelect").attr("transform", function () {
-                        return "translate(" + (leaveData.point.cx.baseVal.value - 8) + ",0)";
-                    });
 
-                    series.setTimePoint(null);
+                    if (typeof series.setTimePoint === 'function') {
+                        series.setTimePoint(null);
+                    }
                 },
                 selectTimePoint = function() {
-                    if (!this.classList.contains("remove")) {
-                        // clear currently selected point
-                        deselectTimePoint();
+                    // clear currently selected point
+                    deselectTimePoint();
 
+                    if (!this.classList.contains("remove")) {
                         // show circles for all series
                         var xCoordinate = leaveData.point.cx.baseVal.value,
                             points = chart.svg.selectAll('circle')[0].filter(function(item) {
@@ -3621,6 +3620,7 @@
                             .style('opacity', 1)
                             .classed('stayVisible', true);
 
+                        d3.selectAll('path.dimple-line').classed('grayed', true);
                         //vertical line
                         d3.select('svg > g').append('line')
                             .attr({
@@ -3638,14 +3638,23 @@
                     }
                 };
 
-            if (series.updateTooltipPosition) {
-                updateTooltipPosition = series.updateTooltipPosition.bind(series);
-            } else {
-                updateTooltipPosition = function(x) { return x; };
+            updateTooltipPosition = function() {
+                if (series.updateTooltipPosition) {
+                    updateTooltipPosition = series.updateTooltipPosition.bind(series);
+                } else {
+                    updateTooltipPosition = function(x) { return x; };
+                }
+                return updateTooltipPosition();
+            };
+
+            // clear selected time point
+            if (chart.timePointSelectable && chart.series[0].clearTimePoints) {
+                deselectTimePoint();
+                chart.series[0].clearTimePoints = false;
             }
 
             // Handle the special interpolation handling for step
-            interpolation =  (series.interpolation === "step" ? "step-after" : series.interpolation);
+            interpolation = (series.interpolation === "step" ? "step-after" : series.interpolation);
 
             // Get the array of ordered values
             orderedSeriesArray = dimple._getSeriesOrder(series.data || chart.data, series);
