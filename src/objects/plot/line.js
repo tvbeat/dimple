@@ -38,6 +38,7 @@
                 updated,
                 removed,
                 orderedSeriesArray,
+                updateTooltipPosition,
                 setActiveLine = function(id) {
                     d3.selectAll('path.dimple-line').classed('active', false)
                         .filter(function() { return this.id === id; })
@@ -210,24 +211,25 @@
                         createTimePointButton(deselectTimePoint, (xCoordinate - 8), 'x', 'timePointSelect remove');
                         series.setTimePoint(leaveData.data.lana['time.interval']);
                     }
-                },
-                updateTooltipPosition = function() {
-                    if (series.updateTooltipPosition) {
-                        updateTooltipPosition = series.updateTooltipPosition.bind(series);
-                    } else {
-                        updateTooltipPosition = function(x) { return x; };
-                    }
-                    return updateTooltipPosition();
                 };
+
+            updateTooltipPosition = function() {
+                if (series.updateTooltipPosition) {
+                    updateTooltipPosition = series.updateTooltipPosition.bind(series);
+                } else {
+                    updateTooltipPosition = function(x) { return x; };
+                }
+                return updateTooltipPosition();
+            };
 
             // clear selected time point
             if (chart.timePointSelectable && chart.series[0].clearTimePoints) {
                 deselectTimePoint();
-                chart.series[0].clearTimePoints = false
+                chart.series[0].clearTimePoints = false;
             }
 
             // Handle the special interpolation handling for step
-            interpolation =  (series.interpolation === "step" ? "step-after" : series.interpolation);
+            interpolation = (series.interpolation === "step" ? "step-after" : series.interpolation);
 
             // Get the array of ordered values
             orderedSeriesArray = dimple._getSeriesOrder(series.data || chart.data, series);
