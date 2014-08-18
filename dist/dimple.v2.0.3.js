@@ -651,7 +651,7 @@
         // Copyright: 2014 PMSI-AlignAlytics
         // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
         // Source: /src/objects/chart/methods/_axisIndex.js
-        // Return the ordinal value of the passed axis.  If an orientation is passed, return the order for the 
+        // Return the ordinal value of the passed axis.  If an orientation is passed, return the order for the
         // specific orientation, otherwise return the order from all axes.  Returns -1 if the passed axis isn't part of the collection
         this._axisIndex = function (axis, orientation) {
 
@@ -1687,7 +1687,7 @@
                                 .each(function () {
                                     var rec = this.getBBox();
                                     d3.select(this)
-                                        .attr("transform", "rotate(90," + rec.x + "," + (rec.y + (rec.height / 2)) + ") translate(-5, 0)");
+                                        .attr("transform", "rotate(45," + rec.x + "," + (rec.y + (rec.height / 2)) + ") translate(-5, 0)");
                                 });
                         } else {
                             // For redraw operations we need to clear the transform
@@ -1711,7 +1711,7 @@
                                 .each(function () {
                                     var rec = this.getBBox();
                                     d3.select(this)
-                                        .attr("transform", "rotate(90," + (rec.x + rec.width) + "," + (rec.y + (rec.height / 2)) + ") translate(5, 0)");
+                                        .attr("transform", "rotate(45," + (rec.x + rec.width) + "," + (rec.y + (rec.height / 2)) + ") translate(5, 0)");
                                 });
                         } else {
                             // For redraw operations we need to clear the transform
@@ -2445,7 +2445,7 @@
                     xIndex += 1;
                 } else if (axis.position === "y" && !this.y.hidden) {
                     if (this._deepMatch(axis)) {
-                        // Set the x co-ordinate for the y axis 
+                        // Set the x co-ordinate for the y axis
                         if (yIndex === 0) {
                             coord.x = firstOrig.x;
                         } else if (yIndex === 1) {
@@ -3282,7 +3282,8 @@
                     } else if (cat === "both") {
                         returnValue = dimple._helpers.cx(d, chart, series);
                     }
-                    return returnValue;
+                    // because returnValue is sometimes NaN
+                    return returnValue || 0;
                 })
                 .attr("y", function (d) {
                     var returnValue = series.y._origin;
@@ -3291,7 +3292,8 @@
                     } else if (cat === "both") {
                         returnValue = dimple._helpers.cy(d, chart, series);
                     }
-                    return returnValue;
+                    // because returnValue is sometimes NaN
+                    return returnValue || 0;
                 })
                 .attr("width", function (d) { return (cat === "x" ?  dimple._helpers.width(d, chart, series) : 0); })
                 .attr("height", function (d) { return (cat === "y" ?  dimple._helpers.height(d, chart, series) : 0); });
@@ -3461,6 +3463,7 @@
                 removed,
                 orderedSeriesArray,
                 updateTooltipPosition,
+
                 setActiveLine = function(id) {
                     d3.selectAll('path.dimple-line').classed('active', false)
                         .filter(function() { return this.id === id; })

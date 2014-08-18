@@ -39,6 +39,7 @@
                 removed,
                 orderedSeriesArray,
                 updateTooltipPosition,
+
                 setActiveLine = function(id) {
                     d3.selectAll('path.dimple-line').classed('active', false)
                         .filter(function() { return this.id === id; })

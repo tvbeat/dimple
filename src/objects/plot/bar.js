@@ -106,7 +106,8 @@
                     } else if (cat === "both") {
                         returnValue = dimple._helpers.cx(d, chart, series);
                     }
-                    return returnValue;
+                    // because returnValue is sometimes NaN
+                    return returnValue || 0;
                 })
                 .attr("y", function (d) {
                     var returnValue = series.y._origin;
@@ -115,7 +116,8 @@
                     } else if (cat === "both") {
                         returnValue = dimple._helpers.cy(d, chart, series);
                     }
-                    return returnValue;
+                    // because returnValue is sometimes NaN
+                    return returnValue || 0;
                 })
                 .attr("width", function (d) { return (cat === "x" ?  dimple._helpers.width(d, chart, series) : 0); })
                 .attr("height", function (d) { return (cat === "y" ?  dimple._helpers.height(d, chart, series) : 0); });
