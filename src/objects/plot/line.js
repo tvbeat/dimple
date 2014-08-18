@@ -38,6 +38,7 @@
                 updated,
                 removed,
                 orderedSeriesArray,
+                updateTooltipPosition,
 
                 setActiveLine = function(id) {
                     d3.selectAll('path.dimple-line').classed('active', false)
@@ -118,7 +119,7 @@
                             leaveData.chart  = chart;
                             leaveData.series = series;
                         } else {
-                            series.updateTooltipPosition(d3.mouse(this));
+                            updateTooltipPosition(d3.mouse(this));
                         }
                     }
                 },
@@ -176,11 +177,15 @@
                     chart.svg.selectAll('circle')
                         .style('opacity', 0)
                         .classed('stayVisible', false);
-                    d3.select(".timePointSelect").attr("transform", function () {
-                        return "translate(" + (leaveData.point.cx.baseVal.value - 8) + ",0)";
-                    });
+                    if (leaveData.point) {
+                        d3.select(".timePointSelect").attr("transform", function () {
+                            return "translate(" + (leaveData.point.cx.baseVal.value - 8) + ",0)";
+                        });
+                    }
 
-                    series.setTimePoint(null);
+                    if (typeof series.setTimePoint === 'function') {
+                        series.setTimePoint(null);
+                    }
                 },
                 selectTimePoint = function() {
                     if (!this.classList.contains("remove")) {
@@ -196,6 +201,7 @@
                             .style('opacity', 1)
                             .classed('stayVisible', true);
 
+                        d3.selectAll('path.dimple-line').classed('grayed', true);
                         //vertical line
                         d3.select('svg > g').append('line')
                             .attr({
@@ -212,6 +218,18 @@
                         series.setTimePoint(leaveData.data.lana['time.interval']);
                     }
                 };
+
+            // clear selected time point
+            if (chart.timePointSelectable && chart.series[0].clearTimePoints) {
+                deselectTimePoint();
+                chart.series[0].clearTimePoints = false
+            }
+
+            if (series.updateTooltipPosition) {
+                updateTooltipPosition = series.updateTooltipPosition.bind(series);
+            } else {
+                updateTooltipPosition = function(x) { return x; };
+            }
 
             // Handle the special interpolation handling for step
             interpolation =  (series.interpolation === "step" ? "step-after" : series.interpolation);
