@@ -199,12 +199,10 @@
                     if (!this.classList.contains("remove")) {
                         // show circles for all series
                         var xCoordinate = leaveData.point.cx.baseVal.value,
-                            points = chart.svg.selectAll('circle')[0].filter(function(item) {
-                                return leaveData.point.cx.baseVal.value === item.cx.baseVal.value;
+                            points = chart.svg.selectAll('circle').filter(function() {
+                                return leaveData.point.cx.baseVal.value === Math.round(d3.select(this).attr('cx'));
                             });
-                        chart.svg.selectAll(points)
-                            .style('opacity', 1)
-                            .classed('stayVisible', true);
+                        points.style('opacity', 1).classed('stayVisible', true);
 
                         chart.svg.selectAll('path.dimple-line').classed('grayed', true);
                         //vertical line
@@ -380,10 +378,10 @@
                 chart.svg.selectAll('path.dimple-line').classed('grayed', true);
                 //show point for new added series/line
                 xVal = chart.svg.select('circle.stayVisible').node().cx.baseVal.value;
-                points = chart.svg.selectAll('circle')[0].filter(function(item) {
-                    return xVal === item.cx.baseVal.value;
+                points = chart.svg.selectAll('circle').filter(function() {
+                    return xVal === Math.round(d3.select(this).attr('cx'));
                 });
-                chart.svg.selectAll(points).style('opacity', 1).classed('stayVisible', true);
+                points.style('opacity', 1).classed('stayVisible', true);
             }
 
             if (!chart.svg.select('line.verticalLine').node()) {
