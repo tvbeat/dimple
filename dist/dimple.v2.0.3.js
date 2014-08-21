@@ -357,6 +357,7 @@
                 remainder,
                 origin,
                 tickCount = this.ticks || 10,
+                offsetLeft,
                 getOrderedCategories = function (self, axPos, oppPos) {
                     var category = self.categoryFields[0],
                         axisData = self._getAxisData(),
@@ -399,8 +400,12 @@
             // If this is an x axis
             if (this.position === "x" && (this._scale === null || refactor)) {
                 if (this._hasTimeField()) {
+                    offsetLeft = 0;
+                    if (!isNaN(this.floatingBarWidth)) {
+                        offsetLeft = this.floatingBarWidth / 2;
+                    }
                     this._scale = d3.time.scale()
-                        .rangeRound([this.chart._xPixels(), this.chart._xPixels() + this.chart._widthPixels()])
+                        .rangeRound([this.chart._xPixels() + offsetLeft, this.chart._xPixels() + this.chart._widthPixels()])
                         .domain([this._min, this._max])
                         .clamp(this.clamp);
                 } else if (this.useLog) {
@@ -651,7 +656,7 @@
         // Copyright: 2014 PMSI-AlignAlytics
         // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
         // Source: /src/objects/chart/methods/_axisIndex.js
-        // Return the ordinal value of the passed axis.  If an orientation is passed, return the order for the
+        // Return the ordinal value of the passed axis.  If an orientation is passed, return the order for the 
         // specific orientation, otherwise return the order from all axes.  Returns -1 if the passed axis isn't part of the collection
         this._axisIndex = function (axis, orientation) {
 
@@ -2445,7 +2450,7 @@
                     xIndex += 1;
                 } else if (axis.position === "y" && !this.y.hidden) {
                     if (this._deepMatch(axis)) {
-                        // Set the x co-ordinate for the y axis
+                        // Set the x co-ordinate for the y axis 
                         if (yIndex === 0) {
                             coord.x = firstOrig.x;
                         } else if (yIndex === 1) {
@@ -2789,6 +2794,7 @@
     // Copyright: 2014 PMSI-AlignAlytics
     // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
     // Source: /src/objects/plot/area.js
+    /*global  $*/
     dimple.plot.area = {
 
         // By default the values are stacked
@@ -2834,16 +2840,34 @@
                 lastAngle,
                 catCoord,
                 valCoord,
-                onEnter = function () {
+                updateTooltipPosition,
+                point,
+                leaveData = {},
+                xVal,
+                grid,
+                xAxis,
+                setActiveLine = function(id) {
+                    chart.svg.selectAll('path.dimple-line').classed('active', false)
+                        .filter(function() { return this.id === id; })
+                        .classed('active', true);
+                },
+                onEnter = function (position, updatePosition) {
+                    if (updatePosition === null) {
+                        updatePosition = false;
+                    }
                     return function (e, shape, chart, series) {
+                        var seriesId = e.aggField[0];
+                        setActiveLine(seriesId);
                         d3.select(shape).style("opacity", 1);
-                        dimple._showPointTooltip(e, shape, chart, series);
+                        dimple._showPointTooltip(e, shape, chart, series, position, updatePosition);
                     };
                 },
-                onLeave = function (lineData) {
+                onLeave = function () {
                     return function (e, shape, chart, series) {
-                        d3.select(shape).style("opacity", (series.lineMarkers || lineData.data.length < 2 ? dimple._helpers.opacity(e, chart, series) : 0));
-                        dimple._removeTooltip(e, shape, chart, series);
+                        if (series) {
+                            d3.select(shape).style("opacity", 0);
+                            dimple._removeTooltip(e, shape, chart, series);
+                        }
                     };
                 },
                 drawMarkers = function (d) {
@@ -2894,8 +2918,162 @@
                     }
                     target.push(returnPoint);
                     return bestAngleSoFar;
+                },
+                //custom vertical lines
+                showTooltipWithLine = function () {
+                    if (chart.svg.select('path.active')[0][0] === null) {
+                        return;
+                    }
+
+                    var xPos = d3.mouse(this)[0],
+                        cx = null,
+                        activeId     = chart.svg.select('path.active').attr('id'),
+                        pointsNumber = chart.svg.selectAll('circle.dimple-' + activeId)[0].length,
+                        width        = d3.select('g.dimple-gridline')[0][0].getBBox().width,
+                        offset       = parseInt(width / ((pointsNumber - 1) * 2), 10),
+                        points,
+                        position     = d3.mouse(this),
+                        x;
+
+                    points = chart.svg.selectAll('circle.dimple-' + activeId)[0].filter(function(item) {
+                        cx = parseInt(item.attributes.cx.value, 10);
+                        return cx >= (xPos - offset) && cx <= (xPos + offset);
+                    });
+
+                    position[0] += 40;
+
+                    if (points.length) {
+                        if (point !== points[0] || point === null) {
+                            point = points[0];
+                            x = parseInt(point.attributes.cx.value, 10) + 1;
+                            chart.svg.select(".verticalLine").attr("transform", function () {
+                                return "translate(" + x + ",0)";
+                            });
+
+                            chart.svg.select(".timePointSelect").attr("transform", function () {
+                                return "translate(" + (x - 9) + ",0)";
+                            });
+
+                            // hide all visible points
+                            d3.selectAll('circle:not(.stayVisible)').style('opacity', 0);
+
+                            onEnter(position)(point.__data__, point, chart, series);
+
+                            leaveData.data   = point.__data__;
+                            leaveData.point  = point;
+                            leaveData.chart  = chart;
+                            leaveData.series = series;
+                        } else {
+                            onEnter(position, true)(point.__data__, point, chart, series);
+                            // updateTooltipPosition(d3.mouse(this));
+                        }
+                    }
+                },
+                hideTooltipWithLine = function(e) {
+                    if (!e && window.event) {
+                        e = event;
+                    }
+                    var goingto = e.relatedTarget || event.toElement,
+                        pos;
+
+                    //unless target leave is tooltip
+                    if ($('div.chart-tooltip').has(goingto).length === 0) {
+                        onLeave({data: []})(leaveData.data, leaveData.point, leaveData.chart, leaveData.series);
+                        setActiveLine(false);
+                        point = null;
+
+                        chart.svg.select(".verticalLine").attr("transform", function () {
+                            return "translate(-1,0)";
+                        });
+                        chart.svg.select(".timePointSelect").attr("transform", function () {
+                            return "translate(-16,0)";
+                        });
+                        chart.svg.select('circle:not(.stayVisible)').attr('opacity', 0);
+                    } else {
+                        pos = d3.mouse(this);
+                        pos[0] += d3.mouse($('div.chart-tooltip:visible')[0])[0];
+                        onEnter(d3.mouse(this))(point.__data__, point, chart, series);
+                    }
+                },
+                createTimePointButton = function(onClick, xPos, sign, className) {
+                    var group = chart.svg.select('g').append('g')
+                        .attr('class', className)
+                        .on('click', onClick)
+                        .attr('transform', "translate(" + xPos + ", 0)");
+
+                    group.append('rect')
+                        .attr('width', '16')
+                        .attr('height', '16')
+                        .attr('fill', '#666666')
+                        .attr('style', 'cursor: pointer;');
+
+                    group.append('text')
+                        .attr({
+                            'x': 8,
+                            'y': 12
+                        })
+                        .attr('style', 'cursor: pointer;text-anchor: middle; font-family: sans-serif; font-size: 13px;')
+                        .attr('fill', 'white')
+                        .text(sign);
+                },
+                deselectTimePoint = function() {
+                    chart.svg.selectAll('path.dimple-line').classed('grayed', false);
+                    chart.svg.select('g.timePointSelect.remove').remove();
+                    chart.svg.select('line.selected').remove();
+                    chart.svg.selectAll('circle')
+                        .style('opacity', 0)
+                        .classed('stayVisible', false);
+
+                    if (typeof series.setTimePoint === 'function') {
+                        series.setTimePoint(null);
+                    }
+                },
+                selectTimePoint = function() {
+                    // clear currently selected point
+                    deselectTimePoint();
+
+                    if (!this.classList.contains("remove")) {
+                        // show circles for all series
+                        var xCoordinate = leaveData.point.cx.baseVal.value,
+                            points = chart.svg.selectAll('circle')[0].filter(function(item) {
+                                return leaveData.point.cx.baseVal.value === item.cx.baseVal.value;
+                            });
+                        chart.svg.selectAll(points)
+                            .style('opacity', 1)
+                            .classed('stayVisible', true);
+
+                        chart.svg.selectAll('path.dimple-line').classed('grayed', true);
+                        //vertical line
+                        chart.svg.select('svg > g').append('line')
+                            .attr({
+                                'x1': xCoordinate,
+                                'y1': 16,
+                                'x2': xCoordinate,
+                                'y2': grid.height - xAxis.height
+                            })
+                            .attr('stroke', 'lightgray')
+                            .attr('class', 'selected');
+
+                        // box for removing selected time point
+                        createTimePointButton(deselectTimePoint, (xCoordinate - 8), 'x', 'timePointSelect remove');
+                        series.setTimePoint(leaveData.data.lana['time.interval']);
+                    }
                 };
 
+            updateTooltipPosition = function() {
+                if (series.updateTooltipPosition) {
+                    updateTooltipPosition = series.updateTooltipPosition.bind(series);
+                } else {
+                    updateTooltipPosition = function(x) { return x; };
+                }
+                return updateTooltipPosition();
+            };
+
+            // clear selected time point
+            if (chart.timePointSelectable && chart.series[0].clearTimePoints) {
+                deselectTimePoint();
+                chart.series[0].clearTimePoints = false;
+            }
             // Handle the special interpolation handling for step
             interpolation =  (series.interpolation === "step" ? "step-after" : series.interpolation);
 
@@ -3131,6 +3309,9 @@
                 .attr("id", function (d) { return d.key; })
                 .attr("class", function (d) { return className + " dimple-line " + d.keyString; })
                 .attr("d", function (d) { return d.entry; })
+                .on('mouseenter', function(d) {
+                    setActiveLine(d.key[0]);
+                })
                 .call(function () {
                     // Apply formats optionally
                     if (!chart.noFormats) {
@@ -3145,6 +3326,45 @@
                     d.markerData = d.data;
                     drawMarkers(d);
                 });
+
+            if (chart.svg.select('g.timePointSelect.remove')[0][0] !== null) {
+                chart.svg.selectAll('path.dimple-line').classed('grayed', true);
+                //show point for new added series/line
+                xVal = chart.svg.select('circle.stayVisible')[0][0].cx.baseVal.value;
+                points = chart.svg.selectAll('circle')[0].filter(function(item) {
+                    return xVal === item.cx.baseVal.value;
+                });
+                chart.svg.selectAll(points).style('opacity', 1).classed('stayVisible', true);
+            }
+
+            if (!chart.svg.select('line.verticalLine').node()) {
+                // vertical line
+                chart.svg
+                    .on('mousemove', showTooltipWithLine)
+                    .on('mouseleave', hideTooltipWithLine);
+
+                chart.svg.select('path.dimple-line')
+                    .on('mousemove', showTooltipWithLine)
+                    .on('mouseleave', hideTooltipWithLine);
+
+                grid = chart.svg.select('g').node().getBBox();
+                xAxis = chart.svg.select('g.dimple-axis').node().getBBox();
+
+                chart.svg.select('g').append('line')
+                    .attr({
+                        'x1': -1,
+                        'y1': grid.y + (typeof chart.y === 'number' ? chart.y : 30) - (chart.timePointSelectable ? 18 : 0),
+                        'x2': -1,
+                        'y2': grid.height - xAxis.height
+                    })
+                    .attr('stroke', 'lightgray')
+                    .attr('class', 'verticalLine');
+
+                if (chart.timePointSelectable) {
+                    // time point selection box
+                    createTimePointButton(selectTimePoint, -16, '+', 'timePointSelect');
+                }
+            }
 
             // Update
             updated = chart._handleTransition(theseShapes, duration, chart)
@@ -3463,18 +3683,19 @@
                 removed,
                 orderedSeriesArray,
                 updateTooltipPosition,
-
                 setActiveLine = function(id) {
-                    d3.selectAll('path.dimple-line').classed('active', false)
+                    chart.svg.selectAll('path.dimple-line').classed('active', false)
                         .filter(function() { return this.id === id; })
                         .classed('active', true);
                 },
                 onEnter = function (position) {
                     return function (e, shape, chart, series) {
-                        var seriesId = e.aggField[0];
-                        setActiveLine(seriesId);
-                        d3.select(shape).style("opacity", 1);
-                        dimple._showPointTooltip(e, shape, chart, series, position);
+                        if (series.disableLineMarkers !== true) {
+                            var seriesId = e.aggField[0];
+                            setActiveLine(seriesId);
+                            d3.select(shape).style("opacity", 1);
+                            dimple._showPointTooltip(e, shape, chart, series, position);
+                        }
                     };
                 },
                 onLeave = function () {
@@ -3508,13 +3729,18 @@
                 },
                 //custom vertical lines
                 showTooltipWithLine = function () {
+                    if (chart.svg.select('path.active')[0][0] === null) {
+                        return;
+                    }
+
                     var xPos = d3.mouse(this)[0],
                         cx = null,
-                        activeId = $('path.active').attr('id'),
+                        activeId     = chart.svg.select('path.active').attr('id'),
                         pointsNumber = chart.svg.selectAll('circle.dimple-' + activeId)[0].length,
                         width        = d3.select('g.dimple-gridline')[0][0].getBBox().width,
                         offset       = parseInt(width / ((pointsNumber - 1) * 2), 10),
                         points,
+                        position     = d3.mouse(this),
                         x;
 
                     points = chart.svg.selectAll('circle.dimple-' + activeId)[0].filter(function(item) {
@@ -3522,28 +3748,32 @@
                         return cx >= (xPos - offset) && cx <= (xPos + offset);
                     });
 
+                    position[0] += 40;
+
                     if (points.length) {
                         if (point !== points[0] || point === null) {
                             point = points[0];
                             x = parseInt(point.attributes.cx.value, 10) + 1;
-                            d3.select(".verticalLine").attr("transform", function () {
+                            chart.svg.select(".verticalLine").attr("transform", function () {
                                 return "translate(" + x + ",0)";
                             });
 
-                            d3.select(".timePointSelect").attr("transform", function () {
+                            chart.svg.select(".timePointSelect").attr("transform", function () {
                                 return "translate(" + (x - 9) + ",0)";
                             });
 
                             // hide all visible points
-                            $('circle:not(.stayVisible)').css('opacity', 0);
-                            onEnter(d3.mouse(this))(point.__data__, point, chart, series);
+                            d3.selectAll('circle:not(.stayVisible)').style('opacity', 0);
+
+                            onEnter(position)(point.__data__, point, chart, series);
 
                             leaveData.data   = point.__data__;
                             leaveData.point  = point;
                             leaveData.chart  = chart;
                             leaveData.series = series;
                         } else {
-                            updateTooltipPosition(d3.mouse(this));
+                            onEnter(position, true)(point.__data__, point, chart, series);
+                            // updateTooltipPosition(d3.mouse(this));
                         }
                     }
                 },
@@ -3555,26 +3785,26 @@
                         pos;
 
                     //unless target leave is tooltip
-                    if ($('div.chart-tooltip').has(goingto).length === 0) {
+                    if ($('div.chart-tooltip:visible').has(goingto).length === 0) {
                         onLeave({data: []})(leaveData.data, leaveData.point, leaveData.chart, leaveData.series);
                         setActiveLine(false);
                         point = null;
 
-                        d3.select(".verticalLine").attr("transform", function () {
+                        chart.svg.select(".verticalLine").attr("transform", function () {
                             return "translate(-1,0)";
                         });
-                        d3.select(".timePointSelect").attr("transform", function () {
+                        chart.svg.select(".timePointSelect").attr("transform", function () {
                             return "translate(-16,0)";
                         });
-                        $('circle:not(.stayVisible)').css('opacity', 0);
+                        chart.svg.select('circle:not(.stayVisible)').attr('opacity', 0);
                     } else {
                         pos = d3.mouse(this);
-                        pos[0] += d3.mouse($('div.chart-tooltip')[0])[0];
+                        pos[0] += d3.mouse($('div.chart-tooltip:visible')[0])[0];
                         onEnter(d3.mouse(this))(point.__data__, point, chart, series);
                     }
                 },
                 createTimePointButton = function(onClick, xPos, sign, className) {
-                    var group = d3.select('svg > g').append('g')
+                    var group = chart.svg.select('g').append('g')
                         .attr('class', className)
                         .on('click', onClick)
                         .attr('transform', "translate(" + xPos + ", 0)");
@@ -3595,9 +3825,9 @@
                         .text(sign);
                 },
                 deselectTimePoint = function() {
-                    d3.selectAll('path.dimple-line').classed('grayed', false);
-                    $('g.timePointSelect.remove').remove();
-                    $('line.selected').remove();
+                    chart.svg.selectAll('path.dimple-line').classed('grayed', false);
+                    chart.svg.select('g.timePointSelect.remove').remove();
+                    chart.svg.select('line.selected').remove();
                     chart.svg.selectAll('circle')
                         .style('opacity', 0)
                         .classed('stayVisible', false);
@@ -3616,13 +3846,13 @@
                             points = chart.svg.selectAll('circle')[0].filter(function(item) {
                                 return leaveData.point.cx.baseVal.value === item.cx.baseVal.value;
                             });
-                        d3.selectAll(points)
+                        chart.svg.selectAll(points)
                             .style('opacity', 1)
                             .classed('stayVisible', true);
 
-                        d3.selectAll('path.dimple-line').classed('grayed', true);
+                        chart.svg.selectAll('path.dimple-line').classed('grayed', true);
                         //vertical line
-                        d3.select('svg > g').append('line')
+                        chart.svg.select('svg > g').append('line')
                             .attr({
                                 'x1': xCoordinate,
                                 'y1': 16,
@@ -3790,29 +4020,33 @@
                     drawMarkers(d);
                 });
 
-            if ($('g.timePointSelect.remove').length) {
-                d3.selectAll('path.dimple-line').classed('grayed', true);
+            if (chart.svg.select('g.timePointSelect.remove')[0][0] !== null) {
+                chart.svg.selectAll('path.dimple-line').classed('grayed', true);
                 //show point for new added series/line
-                xVal = d3.select('circle.stayVisible')[0][0].cx.baseVal.value;
+                xVal = chart.svg.select('circle.stayVisible')[0][0].cx.baseVal.value;
                 points = chart.svg.selectAll('circle')[0].filter(function(item) {
                     return xVal === item.cx.baseVal.value;
                 });
-                d3.selectAll(points).style('opacity', 1).classed('stayVisible', true);
+                chart.svg.selectAll(points).style('opacity', 1).classed('stayVisible', true);
             }
 
-            if (!d3.selectAll('line.verticalLine').node()) {
+            if (!chart.svg.select('line.verticalLine').node()) {
                 // vertical line
-                d3.select('svg')
+                chart.svg
                     .on('mousemove', showTooltipWithLine)
                     .on('mouseleave', hideTooltipWithLine);
 
-                grid = d3.select('svg > g').node().getBBox();
-                xAxis = d3.select('g.dimple-axis').node().getBBox();
+                chart.svg.select('path.dimple-line')
+                    .on('mousemove', showTooltipWithLine)
+                    .on('mouseleave', hideTooltipWithLine);
 
-                d3.select('svg > g').append('line')
+                grid = chart.svg.select('g').node().getBBox();
+                xAxis = chart.svg.select('g.dimple-axis').node().getBBox();
+
+                chart.svg.select('g').append('line')
                     .attr({
                         'x1': -1,
-                        'y1': grid.y + chart.y - (chart.timePointSelectable ? 18 : 0),
+                        'y1': grid.y + (typeof chart.y === 'number' ? chart.y : 30) - (chart.timePointSelectable ? 18 : 0),
                         'x2': -1,
                         'y2': grid.height - xAxis.height
                     })
@@ -4711,9 +4945,9 @@
     dimple._showBarTooltip = function (e, shape, chart, series) {
 
         // The margin between the text and the box
-        var textMargin = 5,
+        var textMargin = 0,
             // The margin between the ring and the popup
-            popupMargin = 10,
+            popupMargin = 30,
             // Collect some facts about the highlighted bar
             selectedShape = d3.select(shape),
             x = parseFloat(selectedShape.attr("x")),
@@ -4724,7 +4958,7 @@
             // The running y value for the text elements
             yRunning = 0,
             // The maximum bounds of the text elements
-            w = 0,
+            w = 350,
             h = 0,
             // Values to shift the popup
             position,
@@ -4746,17 +4980,21 @@
             translateX = (x - (textMargin + popupMargin + w));
             translateY = (y + (height / 2) - ((yRunning - (h - textMargin)) / 2));
         } else if (y + height + yRunning + popupMargin + textMargin < parseFloat(chart.svg.node().getBBox().height)) {
+            translateX = (x + width + textMargin + popupMargin);
+            translateY = (y + (height / 2) - ((yRunning - (h - textMargin)) / 2));
             // Draw centre below
-            translateX = (x + (width / 2) - (2 * textMargin + w) / 2);
-            translateX = (translateX > 0 ? translateX : popupMargin);
-            translateX = (translateX + w < parseFloat(chart.svg.node().getBBox().width) ? translateX : parseFloat(chart.svg.node().getBBox().width) - w - popupMargin);
-            translateY = (y + height + 2 * textMargin);
+            // translateX = (x + (width / 2) - (2 * textMargin + w) / 2);
+            // translateX = (translateX > 0 ? translateX : popupMargin);
+            // translateX = (translateX + w < parseFloat(chart.svg.node().getBBox().width) ? translateX : parseFloat(chart.svg.node().getBBox().width) - w - popupMargin);
+            // translateY = (y + height + 2 * textMargin);
         } else {
+            translateX = (x + width + textMargin + popupMargin);
+            translateY = (y + (height / 2) - ((yRunning - (h - textMargin)) / 2));
             // Draw centre above
-            translateX = (x + (width / 2) - (2 * textMargin + w) / 2);
-            translateX = (translateX > 0 ? translateX : popupMargin);
-            translateX = (translateX + w < parseFloat(chart.svg.node().getBBox().width) ? translateX : parseFloat(chart.svg.node().getBBox().width) - w - popupMargin);
-            translateY = (y - yRunning - (h - textMargin));
+            // translateX = (x + (width / 2) - (2 * textMargin + w) / 2);
+            // translateX = (translateX > 0 ? translateX : popupMargin);
+            // translateX = (translateX + w < parseFloat(chart.svg.node().getBBox().width) ? translateX : parseFloat(chart.svg.node().getBBox().width) - w - popupMargin);
+            // translateY = (y - yRunning - (h - textMargin));
         }
 
         if (typeof series.showTooltip === 'function') {
@@ -4767,11 +5005,11 @@
     // Copyright: 2014 PMSI-AlignAlytics
     // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
     // Source: /src/methods/_showPointTooltip.js
-    dimple._showPointTooltip = function (e, shape, chart, series, positionArray) {
+    dimple._showPointTooltip = function (e, shape, chart, series, positionArray, updatePosition) {
         // The margin between the text and the box
-        var textMargin = 5,
+        var textMargin = 0,
             // The margin between the ring and the popup
-            popupMargin = 10,
+            popupMargin = 30,
             // Collect some facts about the highlighted bubble
             selectedShape = d3.select(shape),
             cx = parseFloat(selectedShape.attr("cx")),
@@ -4781,11 +5019,16 @@
             // The running y value for the text elements
             y = 0,
             // The maximum bounds of the text elements
-            w = 0,
+            w = 350,
             h = 0,
-            position,
+            // position,
             translateX,
             translateY;
+
+        if (positionArray) {
+            cx = positionArray[0];
+            cy = positionArray[1];
+        }
 
         if (chart._tooltipGroup !== null && chart._tooltipGroup !== undefined) {
             chart._tooltipGroup.remove();
@@ -4793,36 +5036,38 @@
         chart._tooltipGroup = chart.svg.append("g");
 
         // Shift the popup around to avoid overlapping the svg edge
-        if (cx + r + textMargin + popupMargin + w < parseFloat(chart.svg.node().getBBox().width)) {
+        if (cx + r + textMargin + popupMargin + w < parseFloat(chart.svg.select('g').node().getBBox().width)) {
             // Draw centre right
             translateX = (cx + r + textMargin + popupMargin);
             translateY = (cy - ((y - (h - textMargin)) / 2));
         } else if (cx - r - (textMargin + popupMargin + w) > 0) {
             // Draw centre left
-            translateX = (cx - r - (textMargin + popupMargin + w));
+            translateX = (cx - r - (textMargin + popupMargin + w) - 30);
             translateY = (cy - ((y - (h - textMargin)) / 2));
         } else if (cy + r + y + popupMargin + textMargin < parseFloat(chart.svg.node().getBBox().height)) {
+            translateX = (cx + r + textMargin + popupMargin);
+            translateY = (cy - ((y - (h - textMargin)) / 2));
             // Draw centre below
-            translateX = (cx - (2 * textMargin + w) / 2);
-            translateX = (translateX > 0 ? translateX : popupMargin);
-            translateX = (translateX + w < parseFloat(chart.svg.node().getBBox().width) ? translateX : parseFloat(chart.svg.node().getBBox().width) - w - popupMargin);
-            translateY = (cy + r + 2 * textMargin);
+            // translateX = (cx - (2 * textMargin + w) / 2);
+            // translateX = (translateX > 0 ? translateX : popupMargin);
+            // translateX = (translateX + w < parseFloat(chart.svg.select('g').node().getBBox().width) ? translateX : parseFloat(chart.svg.select('g').node().getBBox().width) - w - popupMargin);
+            // translateY = (cy + r + 2 * textMargin);
         } else {
+            translateX = (cx + r + textMargin + popupMargin);
+            translateY = (cy - ((y - (h - textMargin)) / 2));
             // Draw centre above
-            translateX = (cx - (2 * textMargin + w) / 2);
-            translateX = (translateX > 0 ? translateX : popupMargin);
-            translateX = (translateX + w < parseFloat(chart.svg.node().getBBox().width) ? translateX : parseFloat(chart.svg.node().getBBox().width) - w - popupMargin);
-            translateY = (cy - y - (h - textMargin));
+            // translateX = (cx - (2 * textMargin + w) / 2);
+            // translateX = (translateX > 0 ? translateX : popupMargin);
+            // translateX = (translateX + w < parseFloat(chart.svg.select('g').node().getBBox().width) ? translateX : parseFloat(chart.svg.select('g').node().getBBox().width) - w - popupMargin);
+            // translateY = (cy - y - (h - textMargin));
         }
 
         if (typeof series.showTooltip === 'function') {
-            if (positionArray) {
-                position = positionArray;
+            if (updatePosition === true) {
+                series.updateTooltipPosition([translateX, translateY]);
             } else {
-                position = [translateX, translateY];
+                series.showTooltip(e, shape, chart, series, [translateX, translateY]);
             }
-
-            series.showTooltip(e, shape, chart, series, position);
         }
     };
     // Copyright: 2014 PMSI-AlignAlytics
