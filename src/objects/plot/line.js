@@ -376,7 +376,7 @@
                     drawMarkers(d);
                 });
 
-            if (chart.svg.select('g.timePointSelect.remove').node() !== null) {
+            if (chart.svg.select('g.timePointSelect.remove')[0][0] !== null) {
                 chart.svg.selectAll('path.dimple-line').classed('grayed', true);
                 //show point for new added series/line
                 xVal = chart.svg.select('circle.stayVisible').node().cx.baseVal.value;
