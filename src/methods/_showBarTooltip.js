@@ -4,9 +4,9 @@
     dimple._showBarTooltip = function (e, shape, chart, series) {
 
         // The margin between the text and the box
-        var textMargin = 5,
+        var textMargin = 0,
             // The margin between the ring and the popup
-            popupMargin = 10,
+            popupMargin = 30,
             // Collect some facts about the highlighted bar
             selectedShape = d3.select(shape),
             x = parseFloat(selectedShape.attr("x")),
@@ -17,7 +17,7 @@
             // The running y value for the text elements
             yRunning = 0,
             // The maximum bounds of the text elements
-            w = 0,
+            w = 350,
             h = 0,
             // Values to shift the popup
             position,
@@ -39,17 +39,21 @@
             translateX = (x - (textMargin + popupMargin + w));
             translateY = (y + (height / 2) - ((yRunning - (h - textMargin)) / 2));
         } else if (y + height + yRunning + popupMargin + textMargin < parseFloat(chart.svg.node().getBBox().height)) {
+            translateX = (x + width + textMargin + popupMargin);
+            translateY = (y + (height / 2) - ((yRunning - (h - textMargin)) / 2));
             // Draw centre below
-            translateX = (x + (width / 2) - (2 * textMargin + w) / 2);
-            translateX = (translateX > 0 ? translateX : popupMargin);
-            translateX = (translateX + w < parseFloat(chart.svg.node().getBBox().width) ? translateX : parseFloat(chart.svg.node().getBBox().width) - w - popupMargin);
-            translateY = (y + height + 2 * textMargin);
+            // translateX = (x + (width / 2) - (2 * textMargin + w) / 2);
+            // translateX = (translateX > 0 ? translateX : popupMargin);
+            // translateX = (translateX + w < parseFloat(chart.svg.node().getBBox().width) ? translateX : parseFloat(chart.svg.node().getBBox().width) - w - popupMargin);
+            // translateY = (y + height + 2 * textMargin);
         } else {
+            translateX = (x + width + textMargin + popupMargin);
+            translateY = (y + (height / 2) - ((yRunning - (h - textMargin)) / 2));
             // Draw centre above
-            translateX = (x + (width / 2) - (2 * textMargin + w) / 2);
-            translateX = (translateX > 0 ? translateX : popupMargin);
-            translateX = (translateX + w < parseFloat(chart.svg.node().getBBox().width) ? translateX : parseFloat(chart.svg.node().getBBox().width) - w - popupMargin);
-            translateY = (y - yRunning - (h - textMargin));
+            // translateX = (x + (width / 2) - (2 * textMargin + w) / 2);
+            // translateX = (translateX > 0 ? translateX : popupMargin);
+            // translateX = (translateX + w < parseFloat(chart.svg.node().getBBox().width) ? translateX : parseFloat(chart.svg.node().getBBox().width) - w - popupMargin);
+            // translateY = (y - yRunning - (h - textMargin));
         }
 
         if (typeof series.showTooltip === 'function') {

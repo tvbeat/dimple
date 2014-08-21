@@ -1,6 +1,7 @@
     // Copyright: 2014 PMSI-AlignAlytics
     // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
     // Source: /src/objects/plot/area.js
+    /*global  $*/
     dimple.plot.area = {
 
         // By default the values are stacked
@@ -46,16 +47,34 @@
                 lastAngle,
                 catCoord,
                 valCoord,
-                onEnter = function () {
+                updateTooltipPosition,
+                point,
+                leaveData = {},
+                xVal,
+                grid,
+                xAxis,
+                setActiveLine = function(id) {
+                    chart.svg.selectAll('path.dimple-line').classed('active', false)
+                        .filter(function() { return this.id === id; })
+                        .classed('active', true);
+                },
+                onEnter = function (position, updatePosition) {
+                    if (updatePosition === null) {
+                        updatePosition = false;
+                    }
                     return function (e, shape, chart, series) {
+                        var seriesId = e.aggField[0];
+                        setActiveLine(seriesId);
                         d3.select(shape).style("opacity", 1);
-                        dimple._showPointTooltip(e, shape, chart, series);
+                        dimple._showPointTooltip(e, shape, chart, series, position, updatePosition);
                     };
                 },
-                onLeave = function (lineData) {
+                onLeave = function () {
                     return function (e, shape, chart, series) {
-                        d3.select(shape).style("opacity", (series.lineMarkers || lineData.data.length < 2 ? dimple._helpers.opacity(e, chart, series) : 0));
-                        dimple._removeTooltip(e, shape, chart, series);
+                        if (series) {
+                            d3.select(shape).style("opacity", 0);
+                            dimple._removeTooltip(e, shape, chart, series);
+                        }
                     };
                 },
                 drawMarkers = function (d) {
@@ -106,8 +125,163 @@
                     }
                     target.push(returnPoint);
                     return bestAngleSoFar;
+                },
+                //custom vertical lines
+                // code is repeating
+                showTooltipWithLine = function () {
+                    if (chart.svg.select('path.active').node() === null) {
+                        return;
+                    }
+
+                    var xPos = d3.mouse(this)[0],
+                        cx = null,
+                        activeId     = chart.svg.select('path.active').attr('id'),
+                        pointsNumber = chart.svg.selectAll('circle.dimple-' + activeId)[0].length,
+                        width        = d3.select('g.dimple-gridline').node().getBBox().width,
+                        offset       = parseInt(width / ((pointsNumber - 1) * 2), 10),
+                        points,
+                        position     = d3.mouse(this),
+                        x;
+
+                    points = chart.svg.selectAll('circle.dimple-' + activeId)[0].filter(function(item) {
+                        cx = parseInt(item.attributes.cx.value, 10);
+                        return cx >= (xPos - offset) && cx <= (xPos + offset);
+                    });
+
+                    position[0] += 40;
+
+                    if (points.length) {
+                        if (point !== points[0] || point === null) {
+                            point = points[0];
+                            x = parseInt(point.attributes.cx.value, 10) + 1;
+                            chart.svg.select(".verticalLine").attr("transform", function () {
+                                return "translate(" + x + ",0)";
+                            });
+
+                            chart.svg.select(".timePointSelect").attr("transform", function () {
+                                return "translate(" + (x - 9) + ",0)";
+                            });
+
+                            // hide all visible points
+                            d3.selectAll('circle:not(.stayVisible)').style('opacity', 0);
+
+                            onEnter(position)(point.__data__, point, chart, series);
+
+                            leaveData.data   = point.__data__;
+                            leaveData.point  = point;
+                            leaveData.chart  = chart;
+                            leaveData.series = series;
+                        } else {
+                            onEnter(position, true)(point.__data__, point, chart, series);
+                            // updateTooltipPosition(d3.mouse(this));
+                        }
+                    }
+                },
+                hideTooltipWithLine = function(e) {
+                    if (!e && window.event) {
+                        e = event;
+                    }
+                    var goingto = e.relatedTarget || event.toElement,
+                        pos;
+
+                    //unless target leave is tooltip
+                    if ($('div.chart-tooltip').has(goingto).length === 0) {
+                        onLeave({data: []})(leaveData.data, leaveData.point, leaveData.chart, leaveData.series);
+                        setActiveLine(false);
+                        point = null;
+
+                        chart.svg.select(".verticalLine").attr("transform", function () {
+                            return "translate(-1,0)";
+                        });
+                        chart.svg.select(".timePointSelect").attr("transform", function () {
+                            return "translate(-16,0)";
+                        });
+                        chart.svg.select('circle:not(.stayVisible)').attr('opacity', 0);
+                    } else {
+                        pos = d3.mouse(this);
+                        pos[0] += d3.mouse($('div.chart-tooltip:visible')[0])[0];
+                        onEnter(d3.mouse(this))(point.__data__, point, chart, series);
+                    }
+                },
+                createTimePointButton = function(onClick, xPos, sign, className) {
+                    var group = chart.svg.select('g').append('g')
+                        .attr('class', className)
+                        .on('click', onClick)
+                        .attr('transform', "translate(" + xPos + ", 0)");
+
+                    group.append('rect')
+                        .attr('width', '16')
+                        .attr('height', '16')
+                        .attr('fill', '#666666')
+                        .attr('style', 'cursor: pointer;');
+
+                    group.append('text')
+                        .attr({
+                            'x': 8,
+                            'y': 12
+                        })
+                        .attr('style', 'cursor: pointer;text-anchor: middle; font-family: sans-serif; font-size: 13px;')
+                        .attr('fill', 'white')
+                        .text(sign);
+                },
+                deselectTimePoint = function() {
+                    chart.svg.selectAll('path.dimple-line').classed('grayed', false);
+                    chart.svg.select('g.timePointSelect.remove').remove();
+                    chart.svg.select('line.selected').remove();
+                    chart.svg.selectAll('circle')
+                        .style('opacity', 0)
+                        .classed('stayVisible', false);
+
+                    if (typeof series.setTimePoint === 'function') {
+                        series.setTimePoint(null);
+                    }
+                },
+                selectTimePoint = function() {
+                    // clear currently selected point
+                    deselectTimePoint();
+
+                    if (!this.classList.contains("remove")) {
+                        // show circles for all series
+                        var xCoordinate = leaveData.point.cx.baseVal.value,
+                            points = chart.svg.selectAll('circle')[0].filter(function(item) {
+                                return leaveData.point.cx.baseVal.value === item.cx.baseVal.value;
+                            });
+                        chart.svg.selectAll(points)
+                            .style('opacity', 1)
+                            .classed('stayVisible', true);
+
+                        chart.svg.selectAll('path.dimple-line').classed('grayed', true);
+                        //vertical line
+                        chart.svg.select('svg > g').append('line')
+                            .attr({
+                                'x1': xCoordinate,
+                                'y1': 16,
+                                'x2': xCoordinate,
+                                'y2': grid.height - xAxis.height
+                            })
+                            .attr('stroke', 'lightgray')
+                            .attr('class', 'selected');
+
+                        // box for removing selected time point
+                        createTimePointButton(deselectTimePoint, (xCoordinate - 8), 'x', 'timePointSelect remove');
+                        series.setTimePoint(leaveData.data.lana['time.interval']);
+                    }
                 };
 
+            updateTooltipPosition = function() {
+                if (series.updateTooltipPosition) {
+                    updateTooltipPosition = series.updateTooltipPosition.bind(series);
+                } else {
+                    updateTooltipPosition = function(x) { return x; };
+                }
+                return updateTooltipPosition();
+            };
+
+            // clear selected time point
+            if (chart.timePointSelectable && chart.series[0].clearTimePoints) {
+                deselectTimePoint();
+                chart.series[0].clearTimePoints = false;
+            }
             // Handle the special interpolation handling for step
             interpolation =  (series.interpolation === "step" ? "step-after" : series.interpolation);
 
@@ -343,6 +517,9 @@
                 .attr("id", function (d) { return d.key; })
                 .attr("class", function (d) { return className + " dimple-line " + d.keyString; })
                 .attr("d", function (d) { return d.entry; })
+                .on('mouseenter', function(d) {
+                    setActiveLine(d.key[0]);
+                })
                 .call(function () {
                     // Apply formats optionally
                     if (!chart.noFormats) {
@@ -357,6 +534,45 @@
                     d.markerData = d.data;
                     drawMarkers(d);
                 });
+
+            if (chart.svg.select('g.timePointSelect.remove').node() !== null) {
+                chart.svg.selectAll('path.dimple-line').classed('grayed', true);
+                //show point for new added series/line
+                xVal = chart.svg.select('circle.stayVisible').node().cx.baseVal.value;
+                points = chart.svg.selectAll('circle')[0].filter(function(item) {
+                    return xVal === item.cx.baseVal.value;
+                });
+                chart.svg.selectAll(points).style('opacity', 1).classed('stayVisible', true);
+            }
+
+            if (!chart.svg.select('line.verticalLine').node()) {
+                // vertical line
+                chart.svg
+                    .on('mousemove', showTooltipWithLine)
+                    .on('mouseleave', hideTooltipWithLine);
+
+                chart.svg.select('path.dimple-line')
+                    .on('mousemove', showTooltipWithLine)
+                    .on('mouseleave', hideTooltipWithLine);
+
+                grid = chart.svg.select('g').node().getBBox();
+                xAxis = chart.svg.select('g.dimple-axis').node().getBBox();
+
+                chart.svg.select('g').append('line')
+                    .attr({
+                        'x1': -1,
+                        'y1': grid.y + (typeof chart.y === 'number' ? chart.y : 30) - (chart.timePointSelectable ? 18 : 0),
+                        'x2': -1,
+                        'y2': grid.height - xAxis.height
+                    })
+                    .attr('stroke', 'lightgray')
+                    .attr('class', 'verticalLine');
+
+                if (chart.timePointSelectable) {
+                    // time point selection box
+                    createTimePointButton(selectTimePoint, -16, '+', 'timePointSelect');
+                }
+            }
 
             // Update
             updated = chart._handleTransition(theseShapes, duration, chart)
