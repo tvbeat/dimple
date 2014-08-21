@@ -85,7 +85,7 @@
                 },
                 //custom vertical lines
                 showTooltipWithLine = function () {
-                    if (chart.svg.select('path.active')[0][0] === null) {
+                    if (chart.svg.select('path.active').node() === null) {
                         return;
                     }
 
@@ -93,7 +93,7 @@
                         cx = null,
                         activeId     = chart.svg.select('path.active').attr('id'),
                         pointsNumber = chart.svg.selectAll('circle.dimple-' + activeId)[0].length,
-                        width        = d3.select('g.dimple-gridline')[0][0].getBBox().width,
+                        width        = d3.select('g.dimple-gridline').node().getBBox().width,
                         offset       = parseInt(width / ((pointsNumber - 1) * 2), 10),
                         points,
                         position     = d3.mouse(this),
@@ -376,10 +376,10 @@
                     drawMarkers(d);
                 });
 
-            if (chart.svg.select('g.timePointSelect.remove')[0][0] !== null) {
+            if (chart.svg.select('g.timePointSelect.remove').node() !== null) {
                 chart.svg.selectAll('path.dimple-line').classed('grayed', true);
                 //show point for new added series/line
-                xVal = chart.svg.select('circle.stayVisible')[0][0].cx.baseVal.value;
+                xVal = chart.svg.select('circle.stayVisible').node().cx.baseVal.value;
                 points = chart.svg.selectAll('circle')[0].filter(function(item) {
                     return xVal === item.cx.baseVal.value;
                 });
