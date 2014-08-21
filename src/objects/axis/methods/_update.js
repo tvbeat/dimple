@@ -9,6 +9,7 @@
                 remainder,
                 origin,
                 tickCount = this.ticks || 10,
+                offsetLeft,
                 getOrderedCategories = function (self, axPos, oppPos) {
                     var category = self.categoryFields[0],
                         axisData = self._getAxisData(),
@@ -51,8 +52,12 @@
             // If this is an x axis
             if (this.position === "x" && (this._scale === null || refactor)) {
                 if (this._hasTimeField()) {
+                    offsetLeft = 0;
+                    if (!isNaN(this.floatingBarWidth)) {
+                        offsetLeft = this.floatingBarWidth / 2;
+                    }
                     this._scale = d3.time.scale()
-                        .rangeRound([this.chart._xPixels(), this.chart._xPixels() + this.chart._widthPixels()])
+                        .rangeRound([this.chart._xPixels() + offsetLeft, this.chart._xPixels() + this.chart._widthPixels()])
                         .domain([this._min, this._max])
                         .clamp(this.clamp);
                 } else if (this.useLog) {
