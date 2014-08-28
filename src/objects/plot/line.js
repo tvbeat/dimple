@@ -152,7 +152,7 @@
                         chart.svg.select(".timePointSelect").attr("transform", function () {
                             return "translate(-16,0)";
                         });
-                        chart.svg.select('circle:not(.stayVisible)').attr('opacity', 0);
+                        d3.selectAll('circle:not(.stayVisible)').style('opacity', 0);
                     } else {
                         pos = d3.mouse(this);
                         pos[0] += d3.mouse($('div.chart-tooltip:visible')[0])[0];
@@ -199,12 +199,10 @@
                     if (!this.classList.contains("remove")) {
                         // show circles for all series
                         var xCoordinate = leaveData.point.cx.baseVal.value,
-                            points = chart.svg.selectAll('circle')[0].filter(function(item) {
-                                return leaveData.point.cx.baseVal.value === item.cx.baseVal.value;
+                            points = chart.svg.selectAll('circle').filter(function() {
+                                return leaveData.point.cx.baseVal.value === Math.round(d3.select(this).attr('cx'));
                             });
-                        chart.svg.selectAll(points)
-                            .style('opacity', 1)
-                            .classed('stayVisible', true);
+                        points.style('opacity', 1).classed('stayVisible', true);
 
                         chart.svg.selectAll('path.dimple-line').classed('grayed', true);
                         //vertical line
@@ -376,14 +374,14 @@
                     drawMarkers(d);
                 });
 
-            if (chart.svg.select('g.timePointSelect.remove')[0][0] !== null) {
+            if (chart.svg.select('g.timePointSelect.remove').node() !== null) {
                 chart.svg.selectAll('path.dimple-line').classed('grayed', true);
                 //show point for new added series/line
                 xVal = chart.svg.select('circle.stayVisible').node().cx.baseVal.value;
-                points = chart.svg.selectAll('circle')[0].filter(function(item) {
-                    return xVal === item.cx.baseVal.value;
+                points = chart.svg.selectAll('circle').filter(function() {
+                    return xVal === Math.round(d3.select(this).attr('cx'));
                 });
-                chart.svg.selectAll(points).style('opacity', 1).classed('stayVisible', true);
+                points.style('opacity', 1).classed('stayVisible', true);
             }
 
             if (!chart.svg.select('line.verticalLine').node()) {
@@ -392,9 +390,9 @@
                     .on('mousemove', showTooltipWithLine)
                     .on('mouseleave', hideTooltipWithLine);
 
-                chart.svg.select('path.dimple-line')
-                    .on('mousemove', showTooltipWithLine)
-                    .on('mouseleave', hideTooltipWithLine);
+                // chart.svg.select('path.dimple-line')
+                //     .on('mousemove', showTooltipWithLine)
+                //     .on('mouseleave', hideTooltipWithLine);
 
                 grid = chart.svg.select('g').node().getBBox();
                 xAxis = chart.svg.select('g.dimple-axis').node().getBBox();
