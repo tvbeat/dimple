@@ -3328,7 +3328,7 @@
                     drawMarkers(d);
                 });
 
-            if (chart.svg.select('g.timePointSelect.remove').node() !== null) {
+            if (chart.svg.select('g.timePointSelect.remove')[0][0] !== null) {
                 chart.svg.selectAll('path.dimple-line').classed('grayed', true);
                 //show point for new added series/line
                 xVal = chart.svg.select('circle.stayVisible').node().cx.baseVal.value;
@@ -3797,7 +3797,7 @@
                         chart.svg.select(".timePointSelect").attr("transform", function () {
                             return "translate(-16,0)";
                         });
-                        chart.svg.select('circle:not(.stayVisible)').attr('opacity', 0);
+                        d3.selectAll('circle:not(.stayVisible)').style('opacity', 0);
                     } else {
                         pos = d3.mouse(this);
                         pos[0] += d3.mouse($('div.chart-tooltip:visible')[0])[0];
@@ -4035,9 +4035,9 @@
                     .on('mousemove', showTooltipWithLine)
                     .on('mouseleave', hideTooltipWithLine);
 
-                chart.svg.select('path.dimple-line')
-                    .on('mousemove', showTooltipWithLine)
-                    .on('mouseleave', hideTooltipWithLine);
+                // chart.svg.select('path.dimple-line')
+                //     .on('mousemove', showTooltipWithLine)
+                //     .on('mouseleave', hideTooltipWithLine);
 
                 grid = chart.svg.select('g').node().getBBox();
                 xAxis = chart.svg.select('g.dimple-axis').node().getBBox();
