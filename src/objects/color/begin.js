@@ -9,4 +9,4 @@
         // Help: http://github.com/PMSI-AlignAlytics/dimple/wiki/dimple.color#wiki-stroke
         this.stroke = (stroke === null || stroke === undefined ? d3.rgb(fill).darker(0.5).toString() : stroke);
         // Help: http://github.com/PMSI-AlignAlytics/dimple/wiki/dimple.color#wiki-opacity
-        this.opacity = (opacity === null || opacity === undefined ? 0.8 : opacity);
+        this.opacity = (opacity === null || opacity === undefined ? 1 : opacity);
