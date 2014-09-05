@@ -299,49 +299,70 @@
                     for (key in totals.y) { if (totals.y.hasOwnProperty(key)) { grandTotals.y += totals.y[key]; } }
                     for (key in totals.z) { if (totals.z.hasOwnProperty(key)) { grandTotals.z += totals.z[key]; } }
 
-                    returnData.forEach(function (ret) {
-                        var baseColor,
-                            targetColor,
-                            scale,
-                            colorVal,
-                            floatingPortion,
-                            getAxisData = function (axis, opp, size) {
-                                var totalField,
-                                    value,
-                                    selectValue,
-                                    pos,
-                                    cumValue;
-                                if (axis !== null && axis !== undefined) {
-                                    pos = axis.position;
-                                    if (!axis._hasCategories()) {
-                                        value = (axis.showPercent ? ret[pos + "Value"] / totals[opp][ret[opp + "Field"].join("/")] : ret[pos + "Value"]);
-                                        totalField = ret[opp + "Field"].join("/") + (ret[pos + "Value"] >= 0);
-                                        cumValue = running[pos][totalField] = ((running[pos][totalField] === null || running[pos][totalField] === undefined || pos === "z") ? 0 : running[pos][totalField]) + value;
-                                        selectValue = ret[pos + "Bound"] = ret["c" + pos] = (((pos === "x" || pos === "y") && series._isStacked()) ? cumValue : value);
+                 returnData.forEach(function (ret) {
+                    var baseColor,
+                        targetColor,
+                        scale,
+                        colorVal,
+                        floatingPortion,
+                        getAxisData = function (axis, opp, size) {
+                            var totalField,
+                                value,
+                                selectValue,
+                                pos,
+                                cumValue;
+                            if (axis !== null && axis !== undefined) {
+                                pos = axis.position;
+                                if (!axis._hasCategories()) {
+                                    value = (axis.showPercent ? ret[pos + "Value"] / totals[opp][ret[opp + "Field"].join("/")] : ret[pos + "Value"]);
+                                    totalField = ret[opp + "Field"].join("/") + (ret[pos + "Value"] >= 0);
+                                    cumValue = running[pos][totalField] = ((running[pos][totalField] === null || running[pos][totalField] === undefined || pos === "z") ? 0 : running[pos][totalField]) + value;
+                                    selectValue = ret[pos + "Bound"] = ret["c" + pos] = (((pos === "x" || pos === "y") && series._isStacked()) ? cumValue : value);
+                                    ret[size] = value;
+                                    ret[pos] = selectValue - (((pos === "x" && value >= 0) || (pos === "y" && value <= 0)) ? value : 0);
+                                } else {
+                                    if (axis._hasMeasure()) {
+                                        totalField = ret[axis.position + "Field"].join("/");
+                                        value = (axis.showPercent ? totals[axis.position][totalField] / grandTotals[axis.position] : totals[axis.position][totalField]);
+                                        if (addedCats.indexOf(totalField) === -1) {
+                                            catTotals[totalField] = value + (addedCats.length > 0 ? catTotals[addedCats[addedCats.length - 1]] : 0);
+                                            addedCats.push(totalField);
+                                        }
+                                        selectValue = ret[pos + "Bound"] = ret["c" + pos] = (((pos === "x" || pos === "y") && series._isStacked()) ? catTotals[totalField] : value);
                                         ret[size] = value;
                                         ret[pos] = selectValue - (((pos === "x" && value >= 0) || (pos === "y" && value <= 0)) ? value : 0);
                                     } else {
-                                        if (axis._hasMeasure()) {
-                                            totalField = ret[axis.position + "Field"].join("/");
-                                            value = (axis.showPercent ? totals[axis.position][totalField] / grandTotals[axis.position] : totals[axis.position][totalField]);
-                                            if (addedCats.indexOf(totalField) === -1) {
-                                                catTotals[totalField] = value + (addedCats.length > 0 ? catTotals[addedCats[addedCats.length - 1]] : 0);
-                                                addedCats.push(totalField);
+
+                                        ret[pos] = ret["c" + pos] = ret[pos + "Field"][0];
+                                        ret[size] = 1;
+                                        if (secondaryElements[pos] !== undefined && secondaryElements[pos] !== null && secondaryElements[pos].length >= 2) {
+                                            // ret[pos + "Offset"] = secondaryElements[pos].indexOf(ret[pos + "Field"][1]);
+                                            // ret[size] = 1 / secondaryElements[pos].length;
+                                            var predicate = {},
+                                                groupData_ = null,
+                                                elements = [],
+                                                maxElementsInGroup = 0,
+                                                el,
+                                                field = _.first(series.x.categoryFields);
+
+                                            predicate[field] = ret[pos + "Field"][0];
+                                            _.where(sortedData, predicate).map(function(item) {
+                                                elements.push(item[series.x.categoryFields[1]]);
+                                            });
+                                            groupData_ = _.groupBy(sortedData, function(item) { return item[field]; });
+                                            for(key in groupData_) {
+                                                maxElementsInGroup = Math.max(groupData_[key].length, maxElementsInGroup);
                                             }
-                                            selectValue = ret[pos + "Bound"] = ret["c" + pos] = (((pos === "x" || pos === "y") && series._isStacked()) ? catTotals[totalField] : value);
-                                            ret[size] = value;
-                                            ret[pos] = selectValue - (((pos === "x" && value >= 0) || (pos === "y" && value <= 0)) ? value : 0);
-                                        } else {
-                                            ret[pos] = ret["c" + pos] = ret[pos + "Field"][0];
-                                            ret[size] = 1;
-                                            if (secondaryElements[pos] !== undefined && secondaryElements[pos] !== null && secondaryElements[pos].length >= 2) {
-                                                ret[pos + "Offset"] = secondaryElements[pos].indexOf(ret[pos + "Field"][1]);
-                                                ret[size] = 1 / secondaryElements[pos].length;
-                                            }
+                                            if(elements.length < maxElementsInGroup)
+                                                ret[pos + "Offset"] = elements.indexOf(ret[pos + "Field"][1]) + ((maxElementsInGroup - elements.length) / 2);
+                                            else
+                                                ret[pos + "Offset"] = elements.indexOf(ret[pos + "Field"][1]);
+                                            ret[size] = 1 / maxElementsInGroup;
                                         }
                                     }
                                 }
-                            };
+                            }
+                        };
                         getAxisData(series.x, "y", "width");
                         getAxisData(series.y, "x", "height");
                         getAxisData(series.z, "z", "r");
