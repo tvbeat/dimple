@@ -446,6 +446,9 @@
                         if (this.ticks) {
                             this._draw.ticks(tickCount);
                         }
+                        if (this.tickValues) {
+                            this._draw.tickValues(this.tickValues);
+                        }
                         break;
                     case 1:
                         this._draw = d3.svg.axis()
@@ -725,6 +728,7 @@
         // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
         // Source: /src/objects/chart/methods/_getSeriesData.js
         // Create a dataset containing positioning information for every series
+        /*global  _*/
         this._getSeriesData = function () {
             // If there are series
             if (this.series !== null && this.series !== undefined) {
@@ -1028,11 +1032,17 @@
                             scale,
                             colorVal,
                             floatingPortion,
+                            predicate = {},
+                            groupData_ = null,
+                            elements = [],
+                            maxElementsInGroup = 0,
+                            field,
                             getAxisData = function (axis, opp, size) {
                                 var totalField,
                                     value,
                                     selectValue,
                                     pos,
+                                    groupDataKey,
                                     cumValue;
                                 if (axis !== null && axis !== undefined) {
                                     pos = axis.position;
@@ -1058,8 +1068,26 @@
                                             ret[pos] = ret["c" + pos] = ret[pos + "Field"][0];
                                             ret[size] = 1;
                                             if (secondaryElements[pos] !== undefined && secondaryElements[pos] !== null && secondaryElements[pos].length >= 2) {
-                                                ret[pos + "Offset"] = secondaryElements[pos].indexOf(ret[pos + "Field"][1]);
-                                                ret[size] = 1 / secondaryElements[pos].length;
+                                                // ret[pos + "Offset"] = secondaryElements[pos].indexOf(ret[pos + "Field"][1]);
+                                                // ret[size] = 1 / secondaryElements[pos].length;
+                                                field = _.first(series.x.categoryFields);
+
+                                                predicate[field] = ret[pos + "Field"][0];
+                                                _.where(sortedData, predicate).map(function(item) {
+                                                    elements.push(item[series.x.categoryFields[1]]);
+                                                });
+                                                groupData_ = _.groupBy(sortedData, function(item) { return item[field]; });
+                                                for (groupDataKey in groupData_) {
+                                                    if (groupData_.hasOwnProperty(groupDataKey)) {
+                                                        maxElementsInGroup = Math.max(groupData_[groupDataKey].length, maxElementsInGroup);
+                                                    }
+                                                }
+                                                if (elements.length < maxElementsInGroup) {
+                                                    ret[pos + "Offset"] = elements.indexOf(ret[pos + "Field"][1]) + ((maxElementsInGroup - elements.length) / 2);
+                                                } else {
+                                                    ret[pos + "Offset"] = elements.indexOf(ret[pos + "Field"][1]);
+                                                }
+                                                ret[size] = 1 / maxElementsInGroup;
                                             }
                                         }
                                     }
@@ -1942,7 +1970,7 @@
         // Help: http://github.com/PMSI-AlignAlytics/dimple/wiki/dimple.color#wiki-stroke
         this.stroke = (stroke === null || stroke === undefined ? d3.rgb(fill).darker(0.5).toString() : stroke);
         // Help: http://github.com/PMSI-AlignAlytics/dimple/wiki/dimple.color#wiki-opacity
-        this.opacity = (opacity === null || opacity === undefined ? 0.8 : opacity);
+        this.opacity = (opacity === null || opacity === undefined ? 1 : opacity);
 
     };
     // End dimple.color
@@ -3484,9 +3512,9 @@
             // Update
             updated = chart._handleTransition(theseShapes, duration, chart, series)
                 .attr("x", function (d) { return xFloat ? dimple._helpers.cx(d, chart, series) - series.x.floatingBarWidth / 2 : dimple._helpers.x(d, chart, series); })
-                .attr("y", function (d) { return yFloat ? dimple._helpers.cy(d, chart, series) - series.y.floatingBarWidth / 2 : dimple._helpers.y(d, chart, series); })
+                .attr("y", function (d) { return yFloat ? dimple._helpers.cy(d, chart, series) - series.y.floatingBarWidth / 2 : dimple._helpers.y(d, chart, series) - (dimple._helpers.height(d, chart, series) < 4 ? 4 - dimple._helpers.height(d, chart, series) : 0); })
                 .attr("width", function (d) { return (xFloat ? series.x.floatingBarWidth : dimple._helpers.width(d, chart, series)); })
-                .attr("height", function (d) { return (yFloat ? series.y.floatingBarWidth : dimple._helpers.height(d, chart, series)); })
+                .attr("height", function (d) { return (yFloat ? series.y.floatingBarWidth : Math.max(dimple._helpers.height(d, chart, series), 4)); })
                 .call(function () {
                     if (!chart.noFormats) {
                         this.attr("fill", function (d) { return dimple._helpers.fill(d, chart, series); })
