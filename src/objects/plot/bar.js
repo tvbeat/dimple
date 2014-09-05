@@ -87,9 +87,9 @@
             // Update
             updated = chart._handleTransition(theseShapes, duration, chart, series)
                 .attr("x", function (d) { return xFloat ? dimple._helpers.cx(d, chart, series) - series.x.floatingBarWidth / 2 : dimple._helpers.x(d, chart, series); })
-                .attr("y", function (d) { return yFloat ? dimple._helpers.cy(d, chart, series) - series.y.floatingBarWidth / 2 : dimple._helpers.y(d, chart, series); })
+                .attr("y", function (d) { return yFloat ? dimple._helpers.cy(d, chart, series) - series.y.floatingBarWidth / 2 : dimple._helpers.y(d, chart, series) - (dimple._helpers.height(d, chart, series) < 4 ? 4 - dimple._helpers.height(d, chart, series) : 0); })
                 .attr("width", function (d) { return (xFloat ? series.x.floatingBarWidth : dimple._helpers.width(d, chart, series)); })
-                .attr("height", function (d) { return (yFloat ? series.y.floatingBarWidth : dimple._helpers.height(d, chart, series)); })
+                .attr("height", function (d) { return (yFloat ? series.y.floatingBarWidth : Math.max(dimple._helpers.height(d, chart, series), 4)); })
                 .call(function () {
                     if (!chart.noFormats) {
                         this.attr("fill", function (d) { return dimple._helpers.fill(d, chart, series); })
