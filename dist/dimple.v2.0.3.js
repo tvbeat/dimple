@@ -449,6 +449,9 @@
                         if (this.tickValues) {
                             this._draw.tickValues(this.tickValues);
                         }
+                        if (this.tickValues) {
+                            this._draw.tickValues(this.tickValues);
+                        }
                         break;
                     case 1:
                         this._draw = d3.svg.axis()
@@ -728,6 +731,7 @@
         // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
         // Source: /src/objects/chart/methods/_getSeriesData.js
         // Create a dataset containing positioning information for every series
+        /*global  _*/
         this._getSeriesData = function () {
             // If there are series
             if (this.series !== null && this.series !== undefined) {
@@ -1031,11 +1035,17 @@
                             scale,
                             colorVal,
                             floatingPortion,
+                            predicate = {},
+                            groupData_ = null,
+                            elements = [],
+                            maxElementsInGroup = 0,
+                            field,
                             getAxisData = function (axis, opp, size) {
                                 var totalField,
                                     value,
                                     selectValue,
                                     pos,
+                                    groupDataKey,
                                     cumValue;
                                 if (axis !== null && axis !== undefined) {
                                     pos = axis.position;
@@ -1061,8 +1071,26 @@
                                             ret[pos] = ret["c" + pos] = ret[pos + "Field"][0];
                                             ret[size] = 1;
                                             if (secondaryElements[pos] !== undefined && secondaryElements[pos] !== null && secondaryElements[pos].length >= 2) {
-                                                ret[pos + "Offset"] = secondaryElements[pos].indexOf(ret[pos + "Field"][1]);
-                                                ret[size] = 1 / secondaryElements[pos].length;
+                                                // ret[pos + "Offset"] = secondaryElements[pos].indexOf(ret[pos + "Field"][1]);
+                                                // ret[size] = 1 / secondaryElements[pos].length;
+                                                field = _.first(series.x.categoryFields);
+
+                                                predicate[field] = ret[pos + "Field"][0];
+                                                _.where(sortedData, predicate).map(function(item) {
+                                                    elements.push(item[series.x.categoryFields[1]]);
+                                                });
+                                                groupData_ = _.groupBy(sortedData, function(item) { return item[field]; });
+                                                for (groupDataKey in groupData_) {
+                                                    if (groupData_.hasOwnProperty(groupDataKey)) {
+                                                        maxElementsInGroup = Math.max(groupData_[groupDataKey].length, maxElementsInGroup);
+                                                    }
+                                                }
+                                                if (elements.length < maxElementsInGroup) {
+                                                    ret[pos + "Offset"] = elements.indexOf(ret[pos + "Field"][1]) + ((maxElementsInGroup - elements.length) / 2);
+                                                } else {
+                                                    ret[pos + "Offset"] = elements.indexOf(ret[pos + "Field"][1]);
+                                                }
+                                                ret[size] = 1 / maxElementsInGroup;
                                             }
                                         }
                                     }
