@@ -1,4 +1,4 @@
-    // Copyright: 2014 PMSI-AlignAlytics
+// Copyright: 2014 PMSI-AlignAlytics
     // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
     // Source: /src/objects/plot/bar.js
     dimple.plot.bar = {
@@ -32,9 +32,9 @@
                 cat = "y";
             }
 
-            if (chart._tooltipGroup !== null && chart._tooltipGroup !== undefined) {
-                chart._tooltipGroup.remove();
-            }
+            // if (chart._tooltipGroup !== null && chart._tooltipGroup !== undefined) {
+            //     chart._tooltipGroup.remove();
+            // }
 
             if (series.shapes === null || series.shapes === undefined) {
                 theseShapes = chart._group.selectAll("." + classes.join(".")).data(chartData);
@@ -73,7 +73,7 @@
                     return returnValue;
                 })
                 .attr("width", function (d) { return (cat === "x" ?  dimple._helpers.width(d, chart, series) : 0); })
-                .attr("height", function (d) { return (cat === "y" ?  dimple._helpers.height(d, chart, series) : 0); })
+                .attr("height", function (d) { return (cat === "y" ? dimple._helpers.height(d, chart, series) : 0); })
                 .attr("opacity", function (d) { return dimple._helpers.opacity(d, chart, series); })
                 .on("mouseover", function (e) { dimple._showBarTooltip(e, this, chart, series); })
                 .on("mouseleave", function (e) { dimple._removeTooltip(e, this, chart, series); })
@@ -87,9 +87,9 @@
             // Update
             updated = chart._handleTransition(theseShapes, duration, chart, series)
                 .attr("x", function (d) { return xFloat ? dimple._helpers.cx(d, chart, series) - series.x.floatingBarWidth / 2 : dimple._helpers.x(d, chart, series); })
-                .attr("y", function (d) { return yFloat ? dimple._helpers.cy(d, chart, series) - series.y.floatingBarWidth / 2 : dimple._helpers.y(d, chart, series); })
+                .attr("y", function (d) { return yFloat ? dimple._helpers.cy(d, chart, series) - series.y.floatingBarWidth / 2 : dimple._helpers.y(d, chart, series) - (dimple._helpers.height(d, chart, series) < 4 ? 4 - dimple._helpers.height(d, chart, series) : 0); })
                 .attr("width", function (d) { return (xFloat ? series.x.floatingBarWidth : dimple._helpers.width(d, chart, series)); })
-                .attr("height", function (d) { return (yFloat ? series.y.floatingBarWidth : dimple._helpers.height(d, chart, series)); })
+                .attr("height", function (d) { return (yFloat ? series.y.floatingBarWidth : Math.max(dimple._helpers.height(d, chart, series), 4)); })
                 .call(function () {
                     if (!chart.noFormats) {
                         this.attr("fill", function (d) { return dimple._helpers.fill(d, chart, series); })
@@ -128,4 +128,3 @@
             series.shapes = theseShapes;
         }
     };
-

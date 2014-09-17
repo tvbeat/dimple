@@ -1,4 +1,4 @@
-    // Copyright: 2014 PMSI-AlignAlytics
+ // Copyright: 2014 PMSI-AlignAlytics
     // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
     // Source: /src/methods/_helpers.js
     dimple._helpers = {
@@ -86,13 +86,19 @@
 
         // Calculate the top left x position for bar type charts
         x: function (d, chart, series) {
-            var returnX = 0;
+            var returnX = 0, seriesPerGroup, totalWidth;
             if (series.x._hasTimeField()) {
                 returnX = series.x._scale(d.x) - (dimple._helpers.width(d, chart, series) / 2);
             } else if (series.x.measure !== null && series.x.measure !== undefined) {
                 returnX = series.x._scale(d.x);
             } else {
                 returnX = series.x._scale(d.x) + dimple._helpers.xGap(chart, series) + (d.xOffset * (dimple._helpers.width(d, chart, series) + 2 * dimple._helpers.xClusterGap(d, chart, series))) + dimple._helpers.xClusterGap(d, chart, series);
+                //align bars on middle of group
+                if (dimple._helpers.width(d, chart, series) >= 40) {
+                    seriesPerGroup = series._positionData.length / series.x._max;
+                    totalWidth = 2 * dimple._helpers.xGap(chart, series) + (seriesPerGroup * (dimple._helpers.width(d, chart, series) + 2 * dimple._helpers.xClusterGap(d, chart, series))) + dimple._helpers.xClusterGap(d, chart, series);
+                    returnX += (chart._widthPixels() / series.x._max - totalWidth) / 2;
+                }
             }
             return returnX;
         },
@@ -120,7 +126,7 @@
             } else {
                 returnWidth = d.width * ((chart._widthPixels() / series.x._max) - (dimple._helpers.xGap(chart, series) * 2)) - (dimple._helpers.xClusterGap(d, chart, series) * 2);
             }
-            return returnWidth;
+            return Math.min(returnWidth, 40);
         },
 
         // Calculate the height for bar type charts
@@ -170,4 +176,3 @@
         }
 
     };
-

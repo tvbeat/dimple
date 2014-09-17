@@ -1,4 +1,4 @@
-    // Copyright: 2014 PMSI-AlignAlytics
+ // Copyright: 2014 PMSI-AlignAlytics
     // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
     // Source: /src/methods/_showPointTooltip.js
     dimple._showPointTooltip = function (e, shape, chart, series, positionArray, updatePosition) {
@@ -7,11 +7,13 @@
             // The margin between the ring and the popup
             popupMargin = 30,
             // Collect some facts about the highlighted bubble
-            selectedShape = d3.select(shape),
-            cx = parseFloat(selectedShape.attr("cx")),
-            cy = parseFloat(selectedShape.attr("cy")),
-            r = parseFloat(selectedShape.attr("r")),
-
+            // selectedShape = d3.select(shape),
+            // cx = parseFloat(selectedShape.attr("cx")),
+            // cy = parseFloat(selectedShape.attr("cy")),
+            // r = parseFloat(selectedShape.attr("r")),
+            cx,
+            cy,
+            r = 4,
             // The running y value for the text elements
             y = 0,
             // The maximum bounds of the text elements
@@ -26,10 +28,10 @@
             cy = positionArray[1];
         }
 
-        if (chart._tooltipGroup !== null && chart._tooltipGroup !== undefined) {
-            chart._tooltipGroup.remove();
-        }
-        chart._tooltipGroup = chart.svg.append("g");
+        // if (chart._tooltipGroup !== null && chart._tooltipGroup !== undefined) {
+        //     chart._tooltipGroup.remove();
+        // }
+        // chart._tooltipGroup = chart.svg.append("g");
 
         // Shift the popup around to avoid overlapping the svg edge
         if (cx + r + textMargin + popupMargin + w < parseFloat(chart.svg.select('g').node().getBBox().width)) {
@@ -62,7 +64,7 @@
             if (updatePosition === true) {
                 series.updateTooltipPosition([translateX, translateY]);
             } else {
-                series.showTooltip(e, shape, chart, series, [translateX, translateY]);
+                series.showTooltip(e, [translateX, translateY]);
             }
         }
     };
