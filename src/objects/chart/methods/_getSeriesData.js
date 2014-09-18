@@ -203,7 +203,7 @@
                                 cValueList: [],
                                 fill: {},
                                 stroke: {},
-                                lana: d
+                                origData: d
                             };
                             returnData.push(newRow);
                             foundIndex = returnData.length - 1;

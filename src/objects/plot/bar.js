@@ -1,4 +1,4 @@
-    // Copyright: 2014 PMSI-AlignAlytics
+// Copyright: 2014 PMSI-AlignAlytics
     // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
     // Source: /src/objects/plot/bar.js
     dimple.plot.bar = {
@@ -32,9 +32,9 @@
                 cat = "y";
             }
 
-            if (chart._tooltipGroup !== null && chart._tooltipGroup !== undefined) {
-                chart._tooltipGroup.remove();
-            }
+            // if (chart._tooltipGroup !== null && chart._tooltipGroup !== undefined) {
+            //     chart._tooltipGroup.remove();
+            // }
 
             if (series.shapes === null || series.shapes === undefined) {
                 theseShapes = chart._group.selectAll("." + classes.join(".")).data(chartData);
@@ -73,7 +73,7 @@
                     return returnValue;
                 })
                 .attr("width", function (d) { return (cat === "x" ?  dimple._helpers.width(d, chart, series) : 0); })
-                .attr("height", function (d) { return (cat === "y" ?  dimple._helpers.height(d, chart, series) : 0); })
+                .attr("height", function (d) { return (cat === "y" ? dimple._helpers.height(d, chart, series) : 0); })
                 .attr("opacity", function (d) { return dimple._helpers.opacity(d, chart, series); })
                 .on("mouseover", function (e) { dimple._showBarTooltip(e, this, chart, series); })
                 .on("mouseleave", function (e) { dimple._removeTooltip(e, this, chart, series); })
@@ -128,4 +128,3 @@
             series.shapes = theseShapes;
         }
     };
-

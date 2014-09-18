@@ -96,7 +96,10 @@
                             .orient("bottom")
                             .scale(this._scale);
                         if (this.ticks) {
-                            this._draw.ticks(tickCount);
+                            this._draw.ticks(this.ticks);
+                        }
+                        if (this.tickValues) {
+                            this._draw.tickValues(this.tickValues);
                         }
                         if (this.tickValues) {
                             this._draw.tickValues(this.tickValues);
