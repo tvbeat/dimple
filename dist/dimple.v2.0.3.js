@@ -3736,7 +3736,7 @@
 
                     chart.svg.selectAll('path.dimple-line')
                         .classed('active', false)
-                        .filter(function() { return this.id === activeId; })
+                        .filter(function() { return this.id === activeId.toString(); })
                         .classed('active', true);
                 },
                 onEnter = function () {
@@ -3745,7 +3745,7 @@
                             var line = chart.lineData.filter(function(line) {
                                 return line.key[0] === e.aggField[0];
                             });
-                            setActiveLine(line);
+                            setActiveLine(line[0]);
                         }
                     };
                 },
@@ -3792,7 +3792,7 @@
                     if (activeLine.keyString) {
                         line = activeLine;
                     } else {
-                        line = chart.lineData[0];
+                        line = lineData[0];
                     }
                     x0 = series.x._scale.invert(d3.mouse(this)[0]);
                     i  = bisectDate(line.data, x0, 1);
@@ -3817,12 +3817,12 @@
 
                     if (verticalLine) {
                         verticalLine
-                            .attr("transform", "translate(" + xCoordinate + ",0)")
+                            .style("transform", "translate(" + xCoordinate + "px,0px)")
                             .attr('data-i', i);
                     }
 
                     if (timePointSelect) {
-                        timePointSelect.attr("transform", "translate(" + (xCoordinate - 9) + ",0)");
+                        timePointSelect.style("transform", "translate(" + (xCoordinate - 9) + "px,0px)");
                     }
 
                     if (activeLine.keyString) {
@@ -3833,10 +3833,12 @@
                         }
                         updateTooltipPosition(pos);
                         // show marker
-                        marker
-                            .attr("cx", activeLine.points[i].x)
-                            .attr("cy", activeLine.points[i].y)
-                            .style('opacity', 1);
+                        if (marker !== null) {
+                            marker
+                                .attr("cx", activeLine.points[i].x)
+                                .attr("cy", activeLine.points[i].y)
+                                .style('opacity', 1);
+                        }
                     }
                 },
                 hideTooltipWithLine = function(e) {
@@ -3851,10 +3853,10 @@
                         dimple._removeTooltip(null, null, chart, series);
                         setActiveLine(false);
                         if (verticalLine !== null) {
-                            verticalLine.attr("transform", "translate(-1,0)");
+                            verticalLine.style("transform", "translate(-1px,0px)");
                         }
                         if (timePointSelect !== null) {
-                            timePointSelect.attr("transform", "translate(-16,0)");
+                            timePointSelect.style("transform", "translate(-16px,0px)");
                         }
                         if (marker !== null) {
                             marker.style('opacity', 0);
@@ -3866,10 +3868,11 @@
                     }
                 },
                 createTimePointButton = function(onClick, xPos, sign, className, i) {
-                    var group = chart.svg.select('g').append('g')
-                        .attr('class', className)
+                    var group = chart.svg.select('g').append('g');
+
+                    group.attr('class', className)
                         .on('click', onClick)
-                        .attr('transform', "translate(" + xPos + ", 0)")
+                        .style('transform', "translate(" + xPos + "px, 0px)")
                         .attr('data-i', i);
 
                     group.append('rect')
@@ -3897,6 +3900,7 @@
                     }
                     if (selectedLine) {
                         selectedLine.remove();
+                        selectedLine = null;
                     }
                     chart.svg.selectAll('circle.dimple-marker')
                         .style('opacity', 0);
@@ -3913,9 +3917,9 @@
                         xCoordinate = chart.lineData[0].points[i].x;
                         marker = null;
                         // show points for every line
-                        chart.lineData.map(function(item) {
+                        chart.lineData.forEach(function(item) {
                             var x0 = series.x._scale.invert(xCoordinate),
-                                j = bisectDate(item.data, x0, 1),
+                                j = bisectDate(chart.lineData[0].data, x0, 1),
                                 d0 = item.data[parseInt(j, 10) - 1],
                                 d1 = item.data[parseInt(j, 10)],
                                 d;
@@ -3926,7 +3930,8 @@
                                 j = parseInt(j, 10) - 1;
                             }
                             // always keep first item for tooltip
-                            item.markerData = [item.markerData[0]].concat(d);
+                            item.markerData = [item.data[0], d];
+
                             drawMarkers(item);
                             chart.svg.selectAll('circle.dimple-marker.' + item.keyString).style('opacity', 1);
                             chart.svg.select('circle.dimple-marker.' + item.keyString).style('opacity', 0);
@@ -3946,7 +3951,7 @@
 
                         // box for removing selected time point
                         timePointRemove = createTimePointButton(deselectTimePoint, (xCoordinate - 8), 'x', 'timePointSelect remove', i);
-                        series.setTimePoint(lineData[0].data[i].origData['time.interval']);
+                        series.setTimePoint(chart.lineData[0].data[i].origData['time.interval']);
                     }
                 };
 
@@ -4098,7 +4103,7 @@
                 })
                 .each(function (d) {
                     // draw only first circle - for tooltip
-                    d.markerData = [].concat(d.data[0]);
+                    d.markerData = [d.data[0], d.data[1]];
                     drawMarkers(d);
                 });
 
@@ -4115,11 +4120,6 @@
                 grid = g.node().getBBox();
                 xAxis = chart.svg.select('g.dimple-axis').node().getBBox();
 
-                // vertical line
-                // chart.svg.select('path.dimple-line')
-                //     .on('mousemove', showTooltipWithLine)
-                //     .on('mouseleave', hideTooltipWithLine);
-
                 verticalLine = g.insert("line", ":first-child")
                     .attr({
                         'x1': -1,
@@ -4134,23 +4134,35 @@
                 if (chart.timePointSelectable) {
                     timePointSelect = createTimePointButton(selectTimePoint, -16, '+', 'timePointSelect', 0);
                 }
-                chart.lineData = lineData;
             } else {
                 verticalLine = chart.svg.select('.verticalLine');
                 if (chart.timePointSelectable) {
                     timePointSelect = chart.svg.select('.timePointSelect');
                 }
             }
+            chart.lineData = lineData;
 
+            // if there was selected time point
             if (chart.svg.select('g.timePointSelect.remove')[0][0] !== null) {
                 i = chart.svg.select('g.timePointSelect.remove').attr('data-i');
-                xCoordinate = chart.lineData[0].points[i].x;
+                xCoordinate = lineData[0].points[i].x;
                 marker = null;
-                // show points for every line
-                chart.lineData.map(function(item) {
-                    j = bisectDate(item.data, series.x._scale.invert(xCoordinate), 1);
+                // TODO: duplicated code from selectTimePoint()
+                chart.lineData.forEach(function(item) {
+                    var x0 = series.x._scale.invert(xCoordinate),
+                        j = bisectDate(chart.lineData[0].data, x0, 1),
+                        d0 = item.data[parseInt(j, 10) - 1],
+                        d1 = item.data[parseInt(j, 10)],
+                        d;
+                    if (x0 - d0.cx > d1.cx - x0) {
+                        d = d1;
+                    } else {
+                        d = d0;
+                        j = parseInt(j, 10) - 1;
+                    }
                     // always keep first item for tooltip
-                    item.markerData = [item.markerData[0]].concat(item.data[j]);
+                    item.markerData = [item.data[0], d];
+
                     drawMarkers(item);
                     chart.svg.selectAll('circle.dimple-marker.' + item.keyString).style('opacity', 1);
                     chart.svg.select('circle.dimple-marker.' + item.keyString).style('opacity', 0);
@@ -4162,9 +4174,6 @@
                 .on('mouseenter', function(d) {
                     setActiveLine(d);
                 });
-                // .each(function (d) {
-
-                // });
 
             // Remove
             removed = chart._handleTransition(theseShapes.exit(), duration, chart)
