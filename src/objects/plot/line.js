@@ -34,7 +34,6 @@
                 updated,
                 removed,
                 orderedSeriesArray,
-                updateTooltipPosition,
                 bisectDate,
                 verticalLine = null,
                 timePointSelect,
@@ -177,13 +176,13 @@
                     if ($('div.chart-tooltip:visible').has(goingto).length === 0) {
                         dimple._removeTooltip(null, null, chart, series);
                         setActiveLine(false);
-                        if (verticalLine !== null) {
+                        if (verticalLine) {
                             verticalLine.style("transform", "translate(-1px,0px)");
                         }
-                        if (timePointSelect !== null) {
+                        if (timePointSelect) {
                             timePointSelect.style("transform", "translate(-16px,0px)");
                         }
-                        if (marker !== null) {
+                        if (marker) {
                             marker.style('opacity', 0);
                         }
                     } else {
@@ -278,16 +277,15 @@
                         timePointRemove = createTimePointButton(deselectTimePoint, (xCoordinate - 8), 'x', 'timePointSelect remove', i);
                         series.setTimePoint(chart.lineData[0].data[i].origData['time.interval']);
                     }
+                },
+                updateTooltipPosition = function() {
+                    if (series.updateTooltipPosition) {
+                        updateTooltipPosition = series.updateTooltipPosition.bind(series);
+                    } else {
+                        updateTooltipPosition = function(x) { return x; };
+                    }
+                    return updateTooltipPosition();
                 };
-
-            updateTooltipPosition = function() {
-                if (series.updateTooltipPosition) {
-                    updateTooltipPosition = series.updateTooltipPosition.bind(series);
-                } else {
-                    updateTooltipPosition = function(x) { return x; };
-                }
-                return updateTooltipPosition();
-            };
 
             bisectDate = d3.bisector(function(d) { return d.cx; }).left;
 
