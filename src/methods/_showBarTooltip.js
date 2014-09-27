@@ -17,7 +17,7 @@
             // The running y value for the text elements
             yRunning = 0,
             // The maximum bounds of the text elements
-            w = 350,
+            w = 250,
             h = 0,
             // Values to shift the popup
             position,
