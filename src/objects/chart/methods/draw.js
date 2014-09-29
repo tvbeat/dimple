@@ -248,16 +248,6 @@
                     handleTrans(axis.shapes.selectAll("text"))
                         .style("font-family", axis.fontFamily)
                         .style("font-size", axis._getFontSize());
-                    handleTrans(axis.shapes.selectAll("path, line"))
-                        .style("fill", "none")
-                        .style("stroke", "black")
-                        .style("shape-rendering", "crispEdges");
-                    if (axis.gridlineShapes !== null) {
-                        handleTrans(axis.gridlineShapes.selectAll("line"))
-                            .style("fill", "none")
-                            .style("stroke", "lightgray")
-                            .style("opacity", 0.8);
-                    }
                 }
                 // Rotate labels, this can only be done once the formats are set
                 if (axis.measure === null || axis.measure === undefined) {
