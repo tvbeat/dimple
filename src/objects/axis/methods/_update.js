@@ -49,6 +49,11 @@
             this._min = (this.overrideMin !== null ? this.overrideMin : this._min);
             this._max = (this.overrideMax !== null ? this.overrideMax : this._max);
 
+            // Sometimes this happens if `overrideMin` is defined but `_min` iz zero
+            if (this._min > this._max) {
+                this._min = this._max;
+            }
+
             // If this is an x axis
             if (this.position === "x" && (this._scale === null || refactor)) {
                 if (this._hasTimeField()) {
