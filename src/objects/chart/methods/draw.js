@@ -141,6 +141,7 @@
                     rotate = "",
                     chart = this,
                     maxLabelWidth,
+                    leaveEveryNthLabel,
                     handleTrans = function (ob) {
                         // Draw the axis
                         // This code might seem unnecessary but even applying a duration of 0 to a transition will cause the code to execute after the
@@ -263,6 +264,7 @@
                 // Rotate labels, this can only be done once the formats are set
                 if (axis.measure === null || axis.measure === undefined) {
                     maxLabelWidth = (chartWidth / axis._getAxisData().length) - 4;
+                    leaveEveryNthLabel = dimple._helpers.leaveEveryNth(axis.shapes.selectAll("text")[0].length);
                     if (axis === firstX) {
                         // If the gaps are narrower than the widest label display all labels horizontally
                         widest = 0;
@@ -275,10 +277,21 @@
                             rotated = true;
                             axis.shapes.selectAll("text")
                                 .style("text-anchor", "start")
-                                .each(function () {
-                                    d3.select(this)
-                                        .call(dimple._helpers.wrap, maxLabelWidth)
-                                        .attr("transform", "translate(" + (maxLabelWidth - d3.select(this).node().clientWidth) / 2 + ", 0)");
+                                .each(function (e, i) {
+                                    if (maxLabelWidth < 20) {
+                                        var rec = this.getBBox();
+                                        if (i % leaveEveryNthLabel !== 0) {
+                                            d3.select(this)
+                                                .attr("opacity", 0);
+                                        } else {
+                                            d3.select(this)
+                                                .attr("transform", "rotate(45," + rec.x + "," + (rec.y + (rec.height / 2)) + ") translate(-5, 0)");
+                                        }
+                                    } else {
+                                        d3.select(this)
+                                            .call(dimple._helpers.wrap, maxLabelWidth)
+                                            .attr("transform", "translate(" + (maxLabelWidth - d3.select(this).node().clientWidth) / 2 + ", 0)");
+                                    }
                                 });
                         } else {
                             // For redraw operations we need to clear the transform
@@ -300,9 +313,20 @@
                             axis.shapes.selectAll("text")
                                 .style("text-anchor", "end")
                                 .each(function () {
-                                    d3.select(this)
-                                        .call(dimple._helpers.wrap, maxLabelWidth)
-                                        .attr("transform", "translate(" + (maxLabelWidth - d3.select(this).node().clientWidth) / 2 + ", 0)");
+                                    if (maxLabelWidth < 20) {
+                                        var rec = this.getBBox();
+                                        if (i % leaveEveryNthLabel !== 0) {
+                                            d3.select(this)
+                                                .attr("opacity", 0);
+                                        } else {
+                                            d3.select(this)
+                                                .attr("transform", "rotate(45," + (rec.x + rec.width) + "," + (rec.y + (rec.height / 2)) + ") translate(5, 0)");
+                                        }
+                                    } else {
+                                        d3.select(this)
+                                            .call(dimple._helpers.wrap, maxLabelWidth)
+                                            .attr("transform", "translate(" + (maxLabelWidth - d3.select(this).node().clientWidth) / 2 + ", 0)");
+                                    }
                                 });
                         } else {
                             // For redraw operations we need to clear the transform

@@ -199,6 +199,22 @@
                     }
                 }
             });
+        },
+
+        leaveEveryNth: function(length) {
+            if (length <= 25) {
+                return 2;
+            }
+            if (length <= 49) {
+                return 3;
+            }
+            if (length <= 73) {
+                return 4;
+            }
+            if (length <= 97) {
+                return 6;
+            }
+            return 8;
         }
 
     };
