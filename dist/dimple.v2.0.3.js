@@ -4900,6 +4900,9 @@
                 leaveEveryNth++;
                 while (24 % leaveEveryNth !== 0) {
                     leaveEveryNth++;
+                    if (leaveEveryNth > 400) {
+                        break;
+                    }
                 }
                 if (leaveEveryNth > 100) {
                     break;
