@@ -4892,10 +4892,17 @@
                 leaveEveryNth =  8;
             }
 
-            while ((seriesLength / leaveEveryNth) * maxLabelWidth > chartWidth && leaveEveryNth < 100) {
+            if (maxLabelWidth < 1) {
+                maxLabelWidth = 1;
+            }
+
+            while ((seriesLength / leaveEveryNth) * maxLabelWidth > chartWidth) {
                 leaveEveryNth++;
                 while (24 % leaveEveryNth !== 0) {
                     leaveEveryNth++;
+                }
+                if (leaveEveryNth > 100) {
+                    break;
                 }
             }
             return leaveEveryNth;
