@@ -101,9 +101,6 @@
                         if (this.tickValues) {
                             this._draw.tickValues(this.tickValues);
                         }
-                        if (this.tickValues) {
-                            this._draw.tickValues(this.tickValues);
-                        }
                         break;
                     case 1:
                         this._draw = d3.svg.axis()
