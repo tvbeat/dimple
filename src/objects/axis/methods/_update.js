@@ -79,8 +79,8 @@
                         }, this);
                     }
                     this._scale = d3.scale.ordinal()
-                        .rangePoints([this.chart._xPixels(), this.chart._xPixels() + this.chart._widthPixels()])
-                        .domain(distinctCats.concat([""]));
+                        .rangeBands([this.chart._xPixels(), this.chart._xPixels() + this.chart._widthPixels()])
+                        .domain(distinctCats);
                 } else {
                     this._scale = d3.scale.linear()
                         .range([this.chart._xPixels(), this.chart._xPixels() + this.chart._widthPixels()])
