@@ -278,9 +278,8 @@
                             axis.shapes.selectAll("text")
                                 .style("text-anchor", "middle")
                                 .each(function (e, i) {
-                                    if (maxLabelWidth < 20) {
+                                    if (maxLabelWidth < 40) {
                                         if (i % leaveEveryNthLabel !== 0) {
-                                            console.log('hide');
                                             d3.select(this.parentNode)
                                                 .style("opacity", 0);
                                         }
@@ -309,7 +308,7 @@
                             axis.shapes.selectAll("text")
                                 .style("text-anchor", "end")
                                 .each(function (e, i) {
-                                    if (maxLabelWidth < 20) {
+                                    if (maxLabelWidth < 40) {
                                         if (i % leaveEveryNthLabel !== 0) {
                                             d3.select(this)
                                                 .attr("opacity", 0);
