@@ -201,20 +201,28 @@
             });
         },
 
-        leaveEveryNth: function(length) {
-            if (length <= 25) {
-                return 2;
+        leaveEveryNth: function(seriesLength, maxLabelWidth, chartWidth) {
+
+            var leaveEveryNth = 1;
+            if (seriesLength <= 25) {
+                leaveEveryNth =  2;
+            } else if (seriesLength <= 49) {
+                leaveEveryNth =  3;
+            } else if (seriesLength <= 73) {
+                leaveEveryNth =  4;
+            } else if (seriesLength <= 97) {
+                leaveEveryNth =  6;
+            } else {
+                leaveEveryNth =  8;
             }
-            if (length <= 49) {
-                return 3;
+
+            while ((seriesLength / leaveEveryNth) * maxLabelWidth > chartWidth) {
+                leaveEveryNth++;
+                while (24 % leaveEveryNth !== 0) {
+                    leaveEveryNth++;
+                }
             }
-            if (length <= 73) {
-                return 4;
-            }
-            if (length <= 97) {
-                return 6;
-            }
-            return 8;
+            return leaveEveryNth;
         }
 
     };

@@ -1602,7 +1602,7 @@
                     transformLabels = function () {
                         if (!axis.measure) {
                             if (axis.position === "x") {
-                                d3.select(this).selectAll("text").attr("x", (chartWidth / axis._max) / 2);
+                                // d3.select(this).selectAll("text").attr("x", (chartWidth / axis._max) / 2);
                             } else if (axis.position === "y") {
                                 d3.select(this).selectAll("text").attr("y", -1 * (chartHeight / axis._max) / 2);
                             }
@@ -1709,7 +1709,6 @@
                 // Rotate labels, this can only be done once the formats are set
                 if (axis.measure === null || axis.measure === undefined) {
                     maxLabelWidth = (chartWidth / axis._getAxisData().length) - 4;
-                    leaveEveryNthLabel = dimple._helpers.leaveEveryNth(axis.shapes.selectAll("text")[0].length);
                     if (axis === firstX) {
                         // If the gaps are narrower than the widest label display all labels horizontally
                         widest = 0;
@@ -1718,24 +1717,21 @@
                                 var w = this.getComputedTextLength();
                                 widest = (w > widest ? w : widest);
                             });
-                        if (widest > chartWidth / axis.shapes.selectAll("text")[0].length) {
+                        leaveEveryNthLabel = dimple._helpers.leaveEveryNth(axis.shapes.selectAll("text")[0].length, widest, chartWidth);
+                        if (widest > chartWidth / axis.shapes.selectAll("text")[0].length || leaveEveryNthLabel > 1) {
                             rotated = true;
                             axis.shapes.selectAll("text")
-                                .style("text-anchor", "start")
+                                .style("text-anchor", "middle")
                                 .each(function (e, i) {
                                     if (maxLabelWidth < 20) {
-                                        var rec = this.getBBox();
                                         if (i % leaveEveryNthLabel !== 0) {
-                                            d3.select(this)
-                                                .attr("opacity", 0);
-                                        } else {
-                                            d3.select(this)
-                                                .attr("transform", "rotate(45," + rec.x + "," + (rec.y + (rec.height / 2)) + ") translate(-5, 0)");
+                                            console.log('hide');
+                                            d3.select(this.parentNode)
+                                                .style("opacity", 0);
                                         }
                                     } else {
                                         d3.select(this)
-                                            .call(dimple._helpers.wrap, maxLabelWidth)
-                                            .attr("transform", "translate(" + (maxLabelWidth - d3.select(this).node().clientWidth) / 2 + ", 0)");
+                                            .call(dimple._helpers.wrap, maxLabelWidth);
                                     }
                                 });
                         } else {
@@ -1757,20 +1753,15 @@
                             rotated = true;
                             axis.shapes.selectAll("text")
                                 .style("text-anchor", "end")
-                                .each(function () {
+                                .each(function (e, i) {
                                     if (maxLabelWidth < 20) {
-                                        var rec = this.getBBox();
                                         if (i % leaveEveryNthLabel !== 0) {
                                             d3.select(this)
                                                 .attr("opacity", 0);
-                                        } else {
-                                            d3.select(this)
-                                                .attr("transform", "rotate(45," + (rec.x + rec.width) + "," + (rec.y + (rec.height / 2)) + ") translate(5, 0)");
                                         }
                                     } else {
                                         d3.select(this)
-                                            .call(dimple._helpers.wrap, maxLabelWidth)
-                                            .attr("transform", "translate(" + (maxLabelWidth - d3.select(this).node().clientWidth) / 2 + ", 0)");
+                                            .call(dimple._helpers.wrap, maxLabelWidth);
                                     }
                                 });
                         } else {
@@ -4887,20 +4878,28 @@
             });
         },
 
-        leaveEveryNth: function(length) {
-            if (length <= 25) {
-                return 2;
+        leaveEveryNth: function(seriesLength, maxLabelWidth, chartWidth) {
+
+            var leaveEveryNth = 1;
+            if (seriesLength <= 25) {
+                leaveEveryNth =  2;
+            } else if (seriesLength <= 49) {
+                leaveEveryNth =  3;
+            } else if (seriesLength <= 73) {
+                leaveEveryNth =  4;
+            } else if (seriesLength <= 97) {
+                leaveEveryNth =  6;
+            } else {
+                leaveEveryNth =  8;
             }
-            if (length <= 49) {
-                return 3;
+
+            while ((seriesLength / leaveEveryNth) * maxLabelWidth > chartWidth) {
+                leaveEveryNth++;
+                while (24 % leaveEveryNth !== 0) {
+                    leaveEveryNth++;
+                }
             }
-            if (length <= 73) {
-                return 4;
-            }
-            if (length <= 97) {
-                return 6;
-            }
-            return 8;
+            return leaveEveryNth;
         }
 
     };
