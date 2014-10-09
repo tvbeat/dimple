@@ -4880,6 +4880,9 @@
         leaveEveryNth: function(seriesLength, maxLabelWidth, chartWidth) {
 
             var leaveEveryNth = 1;
+            if (seriesLength * maxLabelWidth < chartWidth) {
+                return leaveEveryNth;
+            }
             if (seriesLength <= 25) {
                 leaveEveryNth =  2;
             } else if (seriesLength <= 49) {
