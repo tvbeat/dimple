@@ -427,8 +427,8 @@
                         }, this);
                     }
                     this._scale = d3.scale.ordinal()
-                        .rangePoints([this.chart._xPixels(), this.chart._xPixels() + this.chart._widthPixels()])
-                        .domain(distinctCats.concat([""]));
+                        .rangeBands([this.chart._xPixels(), this.chart._xPixels() + this.chart._widthPixels()])
+                        .domain(distinctCats);
                 } else {
                     this._scale = d3.scale.linear()
                         .range([this.chart._xPixels(), this.chart._xPixels() + this.chart._widthPixels()])
@@ -4892,7 +4892,7 @@
                 leaveEveryNth =  8;
             }
 
-            while ((seriesLength / leaveEveryNth) * maxLabelWidth > chartWidth) {
+            while ((seriesLength / leaveEveryNth) * maxLabelWidth > chartWidth && leaveEveryNth < 100) {
                 leaveEveryNth++;
                 while (24 % leaveEveryNth !== 0) {
                     leaveEveryNth++;

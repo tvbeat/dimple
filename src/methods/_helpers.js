@@ -216,7 +216,7 @@
                 leaveEveryNth =  8;
             }
 
-            while ((seriesLength / leaveEveryNth) * maxLabelWidth > chartWidth) {
+            while ((seriesLength / leaveEveryNth) * maxLabelWidth > chartWidth && leaveEveryNth < 100) {
                 leaveEveryNth++;
                 while (24 % leaveEveryNth !== 0) {
                     leaveEveryNth++;
