@@ -156,9 +156,10 @@
                     },
                     transformLabels = function () {
                         if (!axis.measure) {
-                            if (axis.position === "x") {
-                                // d3.select(this).selectAll("text").attr("x", (chartWidth / axis._max) / 2);
-                            } else if (axis.position === "y") {
+                            // if (axis.position === "x") {
+                            //     d3.select(this).selectAll("text").attr("x", (chartWidth / axis._max) / 2);
+                            // } else
+                            if (axis.position === "y") {
                                 d3.select(this).selectAll("text").attr("y", -1 * (chartHeight / axis._max) / 2);
                             }
                         }
@@ -278,14 +279,17 @@
                             axis.shapes.selectAll("text")
                                 .style("text-anchor", "middle")
                                 .each(function (e, i) {
-                                    if (maxLabelWidth < 40) {
+                                    // hide labels only for time axis
+                                    if (axis._hasTimeField()) {
                                         if (i % leaveEveryNthLabel !== 0) {
                                             d3.select(this.parentNode)
                                                 .style("opacity", 0);
                                         }
                                     } else {
+                                        var rec = this.getBBox();
                                         d3.select(this)
-                                            .call(dimple._helpers.wrap, maxLabelWidth);
+                                            // .call(dimple._helpers.wrap, maxLabelWidth)
+                                            .attr("transform", "rotate(45) translate(" + ((rec.width / 2) + 5) + ", 0)");
                                     }
                                 });
                         } else {
@@ -308,14 +312,16 @@
                             axis.shapes.selectAll("text")
                                 .style("text-anchor", "end")
                                 .each(function (e, i) {
-                                    if (maxLabelWidth < 40) {
+                                    if (maxLabelWidth < 40 && axis._hasTimeField()) {
                                         if (i % leaveEveryNthLabel !== 0) {
                                             d3.select(this)
                                                 .attr("opacity", 0);
                                         }
                                     } else {
+                                        var rec = this.getBBox();
                                         d3.select(this)
-                                            .call(dimple._helpers.wrap, maxLabelWidth);
+                                            // .call(dimple._helpers.wrap, maxLabelWidth)
+                                            .attr("transform", "rotate(45) translate(" + ((rec.width / 2) + 5) + ", 0)");
                                     }
                                 });
                         } else {
