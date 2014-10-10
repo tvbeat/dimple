@@ -1587,6 +1587,8 @@
                     chart = this,
                     maxLabelWidth,
                     leaveEveryNthLabel,
+                    dataItem,
+                    enableHide = false,
                     handleTrans = function (ob) {
                         // Draw the axis
                         // This code might seem unnecessary but even applying a duration of 0 to a transition will cause the code to execute after the
@@ -1601,9 +1603,10 @@
                     },
                     transformLabels = function () {
                         if (!axis.measure) {
-                            if (axis.position === "x") {
-                                // d3.select(this).selectAll("text").attr("x", (chartWidth / axis._max) / 2);
-                            } else if (axis.position === "y") {
+                            // if (axis.position === "x") {
+                            //     d3.select(this).selectAll("text").attr("x", (chartWidth / axis._max) / 2);
+                            // } else
+                            if (axis.position === "y") {
                                 d3.select(this).selectAll("text").attr("y", -1 * (chartHeight / axis._max) / 2);
                             }
                         }
@@ -1709,6 +1712,10 @@
                 // Rotate labels, this can only be done once the formats are set
                 if (axis.measure === null || axis.measure === undefined) {
                     maxLabelWidth = (chartWidth / axis._getAxisData().length) - 4;
+                    dataItem = axis._getAxisData()[0];
+                    if (dataItem.date !== undefined &&  dataItem.dateTime !== undefined) {
+                        enableHide = true;
+                    }
                     if (axis === firstX) {
                         // If the gaps are narrower than the widest label display all labels horizontally
                         widest = 0;
@@ -1723,14 +1730,17 @@
                             axis.shapes.selectAll("text")
                                 .style("text-anchor", "middle")
                                 .each(function (e, i) {
-                                    if (maxLabelWidth < 40) {
+                                    // hide labels only for time axis
+                                    if (axis._hasTimeField() || enableHide) {
                                         if (i % leaveEveryNthLabel !== 0) {
                                             d3.select(this.parentNode)
                                                 .style("opacity", 0);
                                         }
                                     } else {
+                                        var rec = this.getBBox();
                                         d3.select(this)
-                                            .call(dimple._helpers.wrap, maxLabelWidth);
+                                            // .call(dimple._helpers.wrap, maxLabelWidth)
+                                            .attr("transform", "rotate(45) translate(" + ((rec.width / 2) + 5) + ", 0)");
                                     }
                                 });
                         } else {
@@ -1753,14 +1763,16 @@
                             axis.shapes.selectAll("text")
                                 .style("text-anchor", "end")
                                 .each(function (e, i) {
-                                    if (maxLabelWidth < 40) {
+                                    if (axis._hasTimeField() || enableHide) {
                                         if (i % leaveEveryNthLabel !== 0) {
                                             d3.select(this)
                                                 .attr("opacity", 0);
                                         }
                                     } else {
+                                        var rec = this.getBBox();
                                         d3.select(this)
-                                            .call(dimple._helpers.wrap, maxLabelWidth);
+                                            // .call(dimple._helpers.wrap, maxLabelWidth)
+                                            .attr("transform", "rotate(45) translate(" + ((rec.width / 2) + 5) + ", 0)");
                                     }
                                 });
                         } else {
@@ -3464,7 +3476,10 @@
                 removed,
                 xFloat = !series._isStacked() && series.x._hasMeasure(),
                 yFloat = !series._isStacked() && series.y._hasMeasure(),
-                cat = "none";
+                cat = "none",
+                g,
+                grid,
+                xAxis;
 
             if (series.x._hasCategories() && series.y._hasCategories()) {
                 cat = "both";
@@ -3568,6 +3583,23 @@
 
             // Save the shapes to the series array
             series.shapes = theseShapes;
+
+            if (chart.svg.selectAll('.verticalLine')[0].length === 0) {
+                g = chart.svg.select('g');
+                grid = g.node().getBBox();
+                xAxis = chart.svg.select('g.dimple-axis').node().getBBox();
+
+                g.insert("line", ":first-child")
+                    .attr({
+                        'x1': -1,
+                        'y1': grid.y + (typeof chart.y === 'number' ? chart.y : 30) - (chart.timePointSelectable ? 18 : 0),
+                        'x2': -1,
+                        'y2': grid.height - xAxis.height
+                    })
+                    .attr('stroke', 'lightgray')
+                    .attr('class', 'verticalLine');
+
+            }
         }
     };
 
@@ -5136,7 +5168,7 @@
             y = parseFloat(selectedShape.attr("y")),
             width = parseFloat(selectedShape.attr("width")),
             height = parseFloat(selectedShape.attr("height")),
-
+            verticalLine,
             // The running y value for the text elements
             yRunning = 0,
             // The maximum bounds of the text elements
@@ -5182,6 +5214,12 @@
         if (typeof series.showTooltip === 'function') {
             position = [translateX, translateY];
             series.showTooltip(e, shape, chart, series, position);
+            verticalLine = chart.svg.select('.verticalLine');
+            if (verticalLine) {
+                verticalLine
+                    .style("transform", "translate(" + (x + width / 2) + "px,0px)");
+                    // .attr('data-i', i);
+            }
         }
     };
  // Copyright: 2014 PMSI-AlignAlytics
