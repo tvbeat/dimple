@@ -142,6 +142,8 @@
                     chart = this,
                     maxLabelWidth,
                     leaveEveryNthLabel,
+                    dataItem,
+                    enableHide = false,
                     handleTrans = function (ob) {
                         // Draw the axis
                         // This code might seem unnecessary but even applying a duration of 0 to a transition will cause the code to execute after the
@@ -265,6 +267,10 @@
                 // Rotate labels, this can only be done once the formats are set
                 if (axis.measure === null || axis.measure === undefined) {
                     maxLabelWidth = (chartWidth / axis._getAxisData().length) - 4;
+                    dataItem = axis._getAxisData()[0];
+                    if (dataItem.date !== undefined &&  dataItem.dateTime !== undefined) {
+                        enableHide = true;
+                    }
                     if (axis === firstX) {
                         // If the gaps are narrower than the widest label display all labels horizontally
                         widest = 0;
@@ -280,7 +286,7 @@
                                 .style("text-anchor", "middle")
                                 .each(function (e, i) {
                                     // hide labels only for time axis
-                                    if (axis._hasTimeField()) {
+                                    if (axis._hasTimeField() || enableHide) {
                                         if (i % leaveEveryNthLabel !== 0) {
                                             d3.select(this.parentNode)
                                                 .style("opacity", 0);
@@ -312,7 +318,7 @@
                             axis.shapes.selectAll("text")
                                 .style("text-anchor", "end")
                                 .each(function (e, i) {
-                                    if (maxLabelWidth < 40 && axis._hasTimeField()) {
+                                    if (axis._hasTimeField() || enableHide) {
                                         if (i % leaveEveryNthLabel !== 0) {
                                             d3.select(this)
                                                 .attr("opacity", 0);
