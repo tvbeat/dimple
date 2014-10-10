@@ -22,7 +22,10 @@
                 removed,
                 xFloat = !series._isStacked() && series.x._hasMeasure(),
                 yFloat = !series._isStacked() && series.y._hasMeasure(),
-                cat = "none";
+                cat = "none",
+                g,
+                grid,
+                xAxis;
 
             if (series.x._hasCategories() && series.y._hasCategories()) {
                 cat = "both";
@@ -126,5 +129,22 @@
 
             // Save the shapes to the series array
             series.shapes = theseShapes;
+
+            if (chart.svg.selectAll('.verticalLine')[0].length === 0) {
+                g = chart.svg.select('g');
+                grid = g.node().getBBox();
+                xAxis = chart.svg.select('g.dimple-axis').node().getBBox();
+
+                g.insert("line", ":first-child")
+                    .attr({
+                        'x1': -1,
+                        'y1': grid.y + (typeof chart.y === 'number' ? chart.y : 30) - (chart.timePointSelectable ? 18 : 0),
+                        'x2': -1,
+                        'y2': grid.height - xAxis.height
+                    })
+                    .attr('stroke', 'lightgray')
+                    .attr('class', 'verticalLine');
+
+            }
         }
     };
