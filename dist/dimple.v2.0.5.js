@@ -1713,7 +1713,7 @@
                 if (axis.measure === null || axis.measure === undefined) {
                     maxLabelWidth = (chartWidth / axis._getAxisData().length) - 4;
                     dataItem = axis._getAxisData()[0];
-                    if (dataItem.date !== undefined &&  dataItem.dateTime !== undefined) {
+                    if (dataItem !== undefined && dataItem.date !== undefined && dataItem.dateTime !== undefined) {
                         enableHide = true;
                     }
                     if (axis === firstX) {
@@ -3769,12 +3769,18 @@
                     if (marker !== null) {
                         marker.style('opacity', 0);
                     }
-                    var activeId = false;
+                    var activeId = false,
+                        key;
 
                     if (d.key) {
                         activeLine = d;
                         activeId = activeLine.key[0];
-                        marker = chart.svg.select('circle.dimple-marker.dimple-' + activeId);
+                        if (typeof activeId === "string" && activeId.indexOf(' ') > 0) {
+                            key = activeId.replace(/\s/g, '-');
+                        } else {
+                            key = activeId;
+                        }
+                        marker = chart.svg.select('circle.dimple-marker.dimple-' + key);
                     } else {
                         activeLine = {};
                     }
@@ -3826,6 +3832,10 @@
                 //custom vertical lines
                 showTooltipWithLine = function () {
 
+                    if (lineData && lineData.length === 0) {
+                        return;
+                    }
+
                     var x0,
                         i,
                         line,
@@ -3839,6 +3849,7 @@
                     } else {
                         line = lineData[0];
                     }
+
                     x0 = series.x._scale.invert(d3.mouse(this)[0]);
                     i  = bisectDate(line.data, x0, 1);
 
@@ -3860,16 +3871,6 @@
                     }
                     xCoordinate = series.x._scale(d.cx) + 1;
 
-                    if (verticalLine) {
-                        verticalLine
-                            .style("transform", "translate(" + xCoordinate + "px,0px)")
-                            .attr('data-i', i);
-                    }
-
-                    if (timePointSelect) {
-                        timePointSelect.style("transform", "translate(" + (xCoordinate - 9) + "px,0px)");
-                    }
-
                     if (activeLine.keyString) {
                         pos = d3.mouse(this);
                         pos[0] += 40;
@@ -3884,6 +3885,18 @@
                                 .attr("cy", activeLine.points[i].y)
                                 .style('opacity', 1);
                         }
+
+                        xCoordinate = activeLine.points[i].x + 1;
+                    }
+
+                    if (verticalLine) {
+                        verticalLine
+                            .style("transform", "translate(" + xCoordinate + "px,0px)")
+                            .attr('data-i', i);
+                    }
+
+                    if (timePointSelect) {
+                        timePointSelect.style("transform", "translate(" + (xCoordinate - 9) + "px,0px)");
                     }
                 },
                 hideTooltipWithLine = function(e) {
@@ -3962,12 +3975,18 @@
                         xCoordinate = chart.lineData[0].points[i].x;
                         marker = null;
                         // show points for every line
-                        chart.lineData.forEach(function(item) {
+                        chart.lineData.forEach(function(item, i) {
                             var x0 = series.x._scale.invert(xCoordinate),
-                                j = bisectDate(chart.lineData[0].data, x0, 1),
+                                j = bisectDate(chart.lineData[i].data, x0, 1),
                                 d0 = item.data[parseInt(j, 10) - 1],
                                 d1 = item.data[parseInt(j, 10)],
-                                d;
+                                d,
+                                key = item.keyString.replace(/\s/g, '-');
+
+                            if (d0 === undefined || d1 === undefined) {
+                                return;
+                            }
+
                             if (x0 - d0.cx > d1.cx - x0) {
                                 d = d1;
                             } else {
@@ -3976,10 +3995,9 @@
                             }
                             // always keep first item for tooltip
                             item.markerData = [item.data[0], d];
-
                             drawMarkers(item);
-                            chart.svg.selectAll('circle.dimple-marker.' + item.keyString).style('opacity', 1);
-                            chart.svg.select('circle.dimple-marker.' + item.keyString).style('opacity', 0);
+                            chart.svg.selectAll('circle.dimple-marker.' + key).style('opacity', 1);
+                            chart.svg.select('circle.dimple-marker.' + key).style('opacity', 0);
                         });
 
                         chart.svg.selectAll('path.dimple-line').classed('grayed', true);
@@ -4064,7 +4082,6 @@
             lineData.map(function(item) {
                 seriesKeys.push(item.keyString);
             });
-
 
             // Sort the line data itself based on the order series array - this matters for stacked lines and default color
             // consistency with colors usually awarded in terms of prominence
@@ -4151,10 +4168,10 @@
                     drawMarkers(d);
                 });
 
-
             chart.svg
-                .on('mousemove', null)
-                .on('mouseleave', null);
+                    .on('mousemove', null)
+                    .on('mouseleave', null);
+
             chart.svg
                 .on('mousemove', showTooltipWithLine)
                 .on('mouseleave', hideTooltipWithLine);
@@ -4197,7 +4214,8 @@
                         j = bisectDate(chart.lineData[0].data, x0, 1),
                         d0 = item.data[parseInt(j, 10) - 1],
                         d1 = item.data[parseInt(j, 10)],
-                        d;
+                        d,
+                        key = item.keyString.replace(/\s/g, '-');
                     if (x0 - d0.cx > d1.cx - x0) {
                         d = d1;
                     } else {
@@ -4208,8 +4226,8 @@
                     item.markerData = [item.data[0], d];
 
                     drawMarkers(item);
-                    chart.svg.selectAll('circle.dimple-marker.' + item.keyString).style('opacity', 1);
-                    chart.svg.select('circle.dimple-marker.' + item.keyString).style('opacity', 0);
+                    chart.svg.selectAll('circle.dimple-marker.' + key).style('opacity', 1);
+                    chart.svg.select('circle.dimple-marker.' + key).style('opacity', 0);
                 });
             }
             // Update
@@ -5224,7 +5242,7 @@
             verticalLine = chart.svg.select('.verticalLine');
             if (verticalLine) {
                 verticalLine
-                    .style("transform", "translate(" + (x + width / 2) + "px,0px)");
+                    .style("transform", "translate(" + (x + (width + 4) / 2) + "px,0px)");
                     // .attr('data-i', i);
             }
         }
