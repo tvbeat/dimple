@@ -62,7 +62,7 @@
             verticalLine = chart.svg.select('.verticalLine');
             if (verticalLine) {
                 verticalLine
-                    .style("transform", "translate(" + (x + width / 2) + "px,0px)");
+                    .style("transform", "translate(" + (x + (width + 4) / 2) + "px,0px)");
                     // .attr('data-i', i);
             }
         }
