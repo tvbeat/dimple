@@ -268,7 +268,7 @@
                 if (axis.measure === null || axis.measure === undefined) {
                     maxLabelWidth = (chartWidth / axis._getAxisData().length) - 4;
                     dataItem = axis._getAxisData()[0];
-                    if (dataItem.date !== undefined &&  dataItem.dateTime !== undefined) {
+                    if (dataItem !== undefined && dataItem.date !== undefined && dataItem.dateTime !== undefined) {
                         enableHide = true;
                     }
                     if (axis === firstX) {
