@@ -173,6 +173,69 @@
                 stroke = chart.getColor(d.aggField.slice(-1)[0]).stroke;
             }
             return stroke;
+        },
+
+        // wrap label text
+        // from http://bl.ocks.org/mbostock/7555321
+        wrap: function(text, width) {
+            text.each(function() {
+                var text = d3.select(this),
+                    words = text.text().split(/\s+/).reverse(),
+                    word,
+                    line = [],
+                    lineNumber = 0,
+                    lineHeight = 1.1, // ems
+                    y = text.attr("y"),
+                    dy = parseFloat(text.attr("dy")),
+                    tspan = text.text(null).append("tspan").attr("x", 0).attr("y", y).attr("dy", dy + "em");
+                while (word = words.pop()) {
+                    line.push(word);
+                    tspan.text(line.join(" "));
+                    if (tspan.node().getComputedTextLength() > width) {
+                        line.pop();
+                        tspan.text(line.join(" "));
+                        line = [word];
+                        tspan = text.append("tspan").attr("x", 0).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+                    }
+                }
+            });
+        },
+
+        leaveEveryNth: function(seriesLength, maxLabelWidth, chartWidth) {
+
+            var leaveEveryNth = 1;
+            if (seriesLength * maxLabelWidth < chartWidth) {
+                return leaveEveryNth;
+            }
+            if (seriesLength <= 25) {
+                leaveEveryNth =  2;
+            } else if (seriesLength <= 49) {
+                leaveEveryNth =  3;
+            } else if (seriesLength <= 73) {
+                leaveEveryNth =  4;
+            } else if (seriesLength <= 97) {
+                leaveEveryNth =  6;
+            } else {
+                leaveEveryNth =  8;
+            }
+
+            if (maxLabelWidth < 1) {
+                maxLabelWidth = 1;
+            }
+
+            while ((seriesLength / leaveEveryNth) * maxLabelWidth > chartWidth) {
+                leaveEveryNth++;
+                while (24 % leaveEveryNth !== 0) {
+                    leaveEveryNth++;
+                    if (leaveEveryNth > 400) {
+                        break;
+                    }
+                }
+                if (leaveEveryNth > 100) {
+                    break;
+                }
+            }
+            return leaveEveryNth;
         }
 
     };

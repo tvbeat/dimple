@@ -84,8 +84,8 @@
                         }, this);
                     }
                     this._scale = d3.scale.ordinal()
-                        .rangePoints([this.chart._xPixels(), this.chart._xPixels() + this.chart._widthPixels()])
-                        .domain(distinctCats.concat([""]));
+                        .rangeBands([this.chart._xPixels(), this.chart._xPixels() + this.chart._widthPixels()])
+                        .domain(distinctCats);
                 } else {
                     this._scale = d3.scale.linear()
                         .range([this.chart._xPixels(), this.chart._xPixels() + this.chart._widthPixels()])
@@ -102,9 +102,6 @@
                             .scale(this._scale);
                         if (this.ticks) {
                             this._draw.ticks(this.ticks);
-                        }
-                        if (this.tickValues) {
-                            this._draw.tickValues(this.tickValues);
                         }
                         if (this.tickValues) {
                             this._draw.tickValues(this.tickValues);

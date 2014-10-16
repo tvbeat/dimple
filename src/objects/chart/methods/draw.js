@@ -140,6 +140,10 @@
                     titleY = 0,
                     rotate = "",
                     chart = this,
+                    maxLabelWidth,
+                    leaveEveryNthLabel,
+                    dataItem,
+                    enableHide = false,
                     handleTrans = function (ob) {
                         // Draw the axis
                         // This code might seem unnecessary but even applying a duration of 0 to a transition will cause the code to execute after the
@@ -154,9 +158,10 @@
                     },
                     transformLabels = function () {
                         if (!axis.measure) {
-                            if (axis.position === "x") {
-                                d3.select(this).selectAll("text").attr("x", (chartWidth / axis._max) / 2);
-                            } else if (axis.position === "y") {
+                            // if (axis.position === "x") {
+                            //     d3.select(this).selectAll("text").attr("x", (chartWidth / axis._max) / 2);
+                            // } else
+                            if (axis.position === "y") {
                                 d3.select(this).selectAll("text").attr("y", -1 * (chartHeight / axis._max) / 2);
                             }
                         }
@@ -251,21 +256,37 @@
                 }
                 // Rotate labels, this can only be done once the formats are set
                 if (axis.measure === null || axis.measure === undefined) {
+                    maxLabelWidth = (chartWidth / axis._getAxisData().length) - 4;
+                    dataItem = axis._getAxisData()[0];
+                    if (dataItem !== undefined && dataItem.date !== undefined && dataItem.dateTime !== undefined) {
+                        enableHide = true;
+                    }
                     if (axis === firstX) {
                         // If the gaps are narrower than the widest label display all labels horizontally
                         widest = 0;
-                        axis.shapes.selectAll("text").each(function () {
-                            var w = this.getComputedTextLength();
-                            widest = (w > widest ? w : widest);
-                        });
-                        if (widest > chartWidth / axis.shapes.selectAll("text")[0].length) {
+                        axis.shapes.selectAll("text")
+                            .each(function () {
+                                var w = this.getComputedTextLength();
+                                widest = (w > widest ? w : widest);
+                            });
+                        leaveEveryNthLabel = dimple._helpers.leaveEveryNth(axis.shapes.selectAll("text")[0].length, widest, chartWidth);
+                        if (widest > chartWidth / axis.shapes.selectAll("text")[0].length || leaveEveryNthLabel > 1) {
                             rotated = true;
                             axis.shapes.selectAll("text")
-                                .style("text-anchor", "start")
-                                .each(function () {
-                                    var rec = this.getBBox();
-                                    d3.select(this)
-                                        .attr("transform", "rotate(45," + rec.x + "," + (rec.y + (rec.height / 2)) + ") translate(-5, 0)");
+                                .style("text-anchor", "middle")
+                                .each(function (e, i) {
+                                    // hide labels only for time axis
+                                    if (axis._hasTimeField() || enableHide) {
+                                        if (i % leaveEveryNthLabel !== 0) {
+                                            d3.select(this.parentNode)
+                                                .style("opacity", 0);
+                                        }
+                                    } else {
+                                        var rec = this.getBBox();
+                                        d3.select(this)
+                                            // .call(dimple._helpers.wrap, maxLabelWidth)
+                                            .attr("transform", "rotate(45) translate(" + ((rec.width / 2) + 5) + ", 0)");
+                                    }
                                 });
                         } else {
                             // For redraw operations we need to clear the transform
@@ -286,10 +307,18 @@
                             rotated = true;
                             axis.shapes.selectAll("text")
                                 .style("text-anchor", "end")
-                                .each(function () {
-                                    var rec = this.getBBox();
-                                    d3.select(this)
-                                        .attr("transform", "rotate(45," + (rec.x + rec.width) + "," + (rec.y + (rec.height / 2)) + ") translate(5, 0)");
+                                .each(function (e, i) {
+                                    if (axis._hasTimeField() || enableHide) {
+                                        if (i % leaveEveryNthLabel !== 0) {
+                                            d3.select(this)
+                                                .attr("opacity", 0);
+                                        }
+                                    } else {
+                                        var rec = this.getBBox();
+                                        d3.select(this)
+                                            // .call(dimple._helpers.wrap, maxLabelWidth)
+                                            .attr("transform", "rotate(45) translate(" + ((rec.width / 2) + 5) + ", 0)");
+                                    }
                                 });
                         } else {
                             // For redraw operations we need to clear the transform

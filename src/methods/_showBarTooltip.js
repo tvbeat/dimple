@@ -13,7 +13,7 @@
             y = parseFloat(selectedShape.attr("y")),
             width = parseFloat(selectedShape.attr("width")),
             height = parseFloat(selectedShape.attr("height")),
-
+            verticalLine,
             // The running y value for the text elements
             yRunning = 0,
             // The maximum bounds of the text elements
@@ -59,5 +59,11 @@
         if (typeof series.showTooltip === 'function') {
             position = [translateX, translateY];
             series.showTooltip(e, shape, chart, series, position);
+            verticalLine = chart.svg.select('.verticalLine');
+            if (verticalLine) {
+                verticalLine
+                    .style("transform", "translate(" + (x + (width + 4) / 2) + "px,0px)");
+                    // .attr('data-i', i);
+            }
         }
     };

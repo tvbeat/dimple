@@ -38,7 +38,7 @@
 
     // Create the stub object
     var dimple = {
-        version: "2.0.3",
+        version: "2.0.5",
         plot: {},
         aggregateMethod: {}
     };
@@ -1587,6 +1587,8 @@
                     chart = this,
                     maxLabelWidth,
                     leaveEveryNthLabel,
+                    dataItem,
+                    enableHide = false,
                     handleTrans = function (ob) {
                         // Draw the axis
                         // This code might seem unnecessary but even applying a duration of 0 to a transition will cause the code to execute after the
@@ -1601,9 +1603,10 @@
                     },
                     transformLabels = function () {
                         if (!axis.measure) {
-                            if (axis.position === "x") {
-                                // d3.select(this).selectAll("text").attr("x", (chartWidth / axis._max) / 2);
-                            } else if (axis.position === "y") {
+                            // if (axis.position === "x") {
+                            //     d3.select(this).selectAll("text").attr("x", (chartWidth / axis._max) / 2);
+                            // } else
+                            if (axis.position === "y") {
                                 d3.select(this).selectAll("text").attr("y", -1 * (chartHeight / axis._max) / 2);
                             }
                         }
@@ -1709,6 +1712,10 @@
                 // Rotate labels, this can only be done once the formats are set
                 if (axis.measure === null || axis.measure === undefined) {
                     maxLabelWidth = (chartWidth / axis._getAxisData().length) - 4;
+                    dataItem = axis._getAxisData()[0];
+                    if (dataItem !== undefined && dataItem.date !== undefined && dataItem.dateTime !== undefined) {
+                        enableHide = true;
+                    }
                     if (axis === firstX) {
                         // If the gaps are narrower than the widest label display all labels horizontally
                         widest = 0;
@@ -1723,14 +1730,17 @@
                             axis.shapes.selectAll("text")
                                 .style("text-anchor", "middle")
                                 .each(function (e, i) {
-                                    if (maxLabelWidth < 40) {
+                                    // hide labels only for time axis
+                                    if (axis._hasTimeField() || enableHide) {
                                         if (i % leaveEveryNthLabel !== 0) {
                                             d3.select(this.parentNode)
                                                 .style("opacity", 0);
                                         }
                                     } else {
+                                        var rec = this.getBBox();
                                         d3.select(this)
-                                            .call(dimple._helpers.wrap, maxLabelWidth);
+                                            // .call(dimple._helpers.wrap, maxLabelWidth)
+                                            .attr("transform", "rotate(45) translate(" + ((rec.width / 2) + 5) + ", 0)");
                                     }
                                 });
                         } else {
@@ -1753,14 +1763,16 @@
                             axis.shapes.selectAll("text")
                                 .style("text-anchor", "end")
                                 .each(function (e, i) {
-                                    if (maxLabelWidth < 40) {
+                                    if (axis._hasTimeField() || enableHide) {
                                         if (i % leaveEveryNthLabel !== 0) {
                                             d3.select(this)
                                                 .attr("opacity", 0);
                                         }
                                     } else {
+                                        var rec = this.getBBox();
                                         d3.select(this)
-                                            .call(dimple._helpers.wrap, maxLabelWidth);
+                                            // .call(dimple._helpers.wrap, maxLabelWidth)
+                                            .attr("transform", "rotate(45) translate(" + ((rec.width / 2) + 5) + ", 0)");
                                     }
                                 });
                         } else {
@@ -3464,7 +3476,10 @@
                 removed,
                 xFloat = !series._isStacked() && series.x._hasMeasure(),
                 yFloat = !series._isStacked() && series.y._hasMeasure(),
-                cat = "none";
+                cat = "none",
+                g,
+                grid,
+                xAxis;
 
             if (series.x._hasCategories() && series.y._hasCategories()) {
                 cat = "both";
@@ -3568,6 +3583,23 @@
 
             // Save the shapes to the series array
             series.shapes = theseShapes;
+
+            if (chart.svg.selectAll('.verticalLine')[0].length === 0) {
+                g = chart.svg.select('g');
+                grid = g.node().getBBox();
+                xAxis = chart.svg.select('g.dimple-axis').node().getBBox();
+
+                g.insert("line", ":first-child")
+                    .attr({
+                        'x1': -1,
+                        'y1': grid.y + (typeof chart.y === 'number' ? chart.y : 30) - (chart.timePointSelectable ? 18 : 0),
+                        'x2': -1,
+                        'y2': grid.height - xAxis.height
+                    })
+                    .attr('stroke', 'lightgray')
+                    .attr('class', 'verticalLine');
+
+            }
         }
     };
 
@@ -3737,12 +3769,18 @@
                     if (marker !== null) {
                         marker.style('opacity', 0);
                     }
-                    var activeId = false;
+                    var activeId = false,
+                        key;
 
                     if (d.key) {
                         activeLine = d;
                         activeId = activeLine.key[0];
-                        marker = chart.svg.select('circle.dimple-marker.dimple-' + activeId);
+                        if (typeof activeId === "string" && activeId.indexOf(' ') > 0) {
+                            key = activeId.replace(/\s/g, '-');
+                        } else {
+                            key = activeId;
+                        }
+                        marker = chart.svg.select('circle.dimple-marker.dimple-' + key);
                     } else {
                         activeLine = {};
                     }
@@ -3794,6 +3832,10 @@
                 //custom vertical lines
                 showTooltipWithLine = function () {
 
+                    if (lineData && lineData.length === 0) {
+                        return;
+                    }
+
                     var x0,
                         i,
                         line,
@@ -3807,6 +3849,7 @@
                     } else {
                         line = lineData[0];
                     }
+
                     x0 = series.x._scale.invert(d3.mouse(this)[0]);
                     i  = bisectDate(line.data, x0, 1);
 
@@ -3828,16 +3871,6 @@
                     }
                     xCoordinate = series.x._scale(d.cx) + 1;
 
-                    if (verticalLine) {
-                        verticalLine
-                            .style("transform", "translate(" + xCoordinate + "px,0px)")
-                            .attr('data-i', i);
-                    }
-
-                    if (timePointSelect) {
-                        timePointSelect.style("transform", "translate(" + (xCoordinate - 9) + "px,0px)");
-                    }
-
                     if (activeLine.keyString) {
                         pos = d3.mouse(this);
                         pos[0] += 40;
@@ -3852,6 +3885,18 @@
                                 .attr("cy", activeLine.points[i].y)
                                 .style('opacity', 1);
                         }
+
+                        xCoordinate = activeLine.points[i].x + 1;
+                    }
+
+                    if (verticalLine) {
+                        verticalLine
+                            .style("transform", "translate(" + xCoordinate + "px,0px)")
+                            .attr('data-i', i);
+                    }
+
+                    if (timePointSelect) {
+                        timePointSelect.style("transform", "translate(" + (xCoordinate - 9) + "px,0px)");
                     }
                 },
                 hideTooltipWithLine = function(e) {
@@ -3930,12 +3975,18 @@
                         xCoordinate = chart.lineData[0].points[i].x;
                         marker = null;
                         // show points for every line
-                        chart.lineData.forEach(function(item) {
+                        chart.lineData.forEach(function(item, i) {
                             var x0 = series.x._scale.invert(xCoordinate),
-                                j = bisectDate(chart.lineData[0].data, x0, 1),
+                                j = bisectDate(chart.lineData[i].data, x0, 1),
                                 d0 = item.data[parseInt(j, 10) - 1],
                                 d1 = item.data[parseInt(j, 10)],
-                                d;
+                                d,
+                                key = item.keyString.replace(/\s/g, '-');
+
+                            if (d0 === undefined || d1 === undefined) {
+                                return;
+                            }
+
                             if (x0 - d0.cx > d1.cx - x0) {
                                 d = d1;
                             } else {
@@ -3944,10 +3995,9 @@
                             }
                             // always keep first item for tooltip
                             item.markerData = [item.data[0], d];
-
                             drawMarkers(item);
-                            chart.svg.selectAll('circle.dimple-marker.' + item.keyString).style('opacity', 1);
-                            chart.svg.select('circle.dimple-marker.' + item.keyString).style('opacity', 0);
+                            chart.svg.selectAll('circle.dimple-marker.' + key).style('opacity', 1);
+                            chart.svg.select('circle.dimple-marker.' + key).style('opacity', 0);
                         });
 
                         chart.svg.selectAll('path.dimple-line').classed('grayed', true);
@@ -4032,7 +4082,6 @@
             lineData.map(function(item) {
                 seriesKeys.push(item.keyString);
             });
-
 
             // Sort the line data itself based on the order series array - this matters for stacked lines and default color
             // consistency with colors usually awarded in terms of prominence
@@ -4119,10 +4168,10 @@
                     drawMarkers(d);
                 });
 
-
             chart.svg
-                .on('mousemove', null)
-                .on('mouseleave', null);
+                    .on('mousemove', null)
+                    .on('mouseleave', null);
+
             chart.svg
                 .on('mousemove', showTooltipWithLine)
                 .on('mouseleave', hideTooltipWithLine);
@@ -4165,7 +4214,8 @@
                         j = bisectDate(chart.lineData[0].data, x0, 1),
                         d0 = item.data[parseInt(j, 10) - 1],
                         d1 = item.data[parseInt(j, 10)],
-                        d;
+                        d,
+                        key = item.keyString.replace(/\s/g, '-');
                     if (x0 - d0.cx > d1.cx - x0) {
                         d = d1;
                     } else {
@@ -4176,8 +4226,8 @@
                     item.markerData = [item.data[0], d];
 
                     drawMarkers(item);
-                    chart.svg.selectAll('circle.dimple-marker.' + item.keyString).style('opacity', 1);
-                    chart.svg.select('circle.dimple-marker.' + item.keyString).style('opacity', 0);
+                    chart.svg.selectAll('circle.dimple-marker.' + key).style('opacity', 1);
+                    chart.svg.select('circle.dimple-marker.' + key).style('opacity', 0);
                 });
             }
             // Update
@@ -4880,6 +4930,9 @@
         leaveEveryNth: function(seriesLength, maxLabelWidth, chartWidth) {
 
             var leaveEveryNth = 1;
+            if (seriesLength * maxLabelWidth < chartWidth) {
+                return leaveEveryNth;
+            }
             if (seriesLength <= 25) {
                 leaveEveryNth =  2;
             } else if (seriesLength <= 49) {
@@ -5054,6 +5107,13 @@
     dimple._removeTooltip = function (e, shape, chart, series) {
         if (typeof series.removeTooltip === 'function') {
             series.removeTooltip();
+
+        }
+
+        var verticalLine = chart.svg.select('.verticalLine');
+        if (verticalLine) {
+            verticalLine
+                .style("transform", "translate(-16px,0px)");
         }
     };
     /*jslint unparam: false */
@@ -5133,7 +5193,7 @@
             y = parseFloat(selectedShape.attr("y")),
             width = parseFloat(selectedShape.attr("width")),
             height = parseFloat(selectedShape.attr("height")),
-
+            verticalLine,
             // The running y value for the text elements
             yRunning = 0,
             // The maximum bounds of the text elements
@@ -5179,6 +5239,12 @@
         if (typeof series.showTooltip === 'function') {
             position = [translateX, translateY];
             series.showTooltip(e, shape, chart, series, position);
+            verticalLine = chart.svg.select('.verticalLine');
+            if (verticalLine) {
+                verticalLine
+                    .style("transform", "translate(" + (x + (width + 4) / 2) + "px,0px)");
+                    // .attr('data-i', i);
+            }
         }
     };
  // Copyright: 2014 PMSI-AlignAlytics
