@@ -126,6 +126,28 @@
                     firstY = axis;
                 }
             }, this);
+
+            // Add gridlines before axes, so their z-index is smaller
+            this.axes.forEach(function (axis) {
+                if (axis.gridlineShapes === null) {
+                    if (axis.showGridlines || (axis.showGridlines === null && !axis._hasCategories() && ((!xGridSet && axis.position === "x") || (!yGridSet && axis.position === "y")))) {
+                        // Add a group for the gridlines to allow css formatting
+                        axis.gridlineShapes = this._group.append("g").attr("class", "dimple-gridline");
+                        if (axis.position === "x") {
+                            xGridSet = true;
+                        } else {
+                            yGridSet = true;
+                        }
+                    }
+                } else {
+                    if (axis.position === "x") {
+                        xGridSet = true;
+                    } else {
+                        yGridSet = true;
+                    }
+                }
+            }, this)
+
             // Iterate the axes again
             this.axes.forEach(function (axis) {
                 // Don't animate axes on first draw
@@ -177,23 +199,6 @@
                         }
                     };
 
-                if (axis.gridlineShapes === null) {
-                    if (axis.showGridlines || (axis.showGridlines === null && !axis._hasCategories() && ((!xGridSet && axis.position === "x") || (!yGridSet && axis.position === "y")))) {
-                        // Add a group for the gridlines to allow css formatting
-                        axis.gridlineShapes = this._group.append("g").attr("class", "dimple-gridline");
-                        if (axis.position === "x") {
-                            xGridSet = true;
-                        } else {
-                            yGridSet = true;
-                        }
-                    }
-                } else {
-                    if (axis.position === "x") {
-                        xGridSet = true;
-                    } else {
-                        yGridSet = true;
-                    }
-                }
                 if (axis.shapes === null) {
                     // Add a group for the axes to allow css formatting
                     axis.shapes = this._group.append("g")
