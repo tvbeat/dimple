@@ -45,13 +45,6 @@
                 .text(function(d) {
                     return d.key;
                 })
-                .call(function () {
-                    if (!self.chart.noFormats) {
-                        this.style("font-family", self.fontFamily)
-                            .style("font-size", self._getFontSize())
-                            .style("shape-rendering", "crispEdges");
-                    }
-                })
                 .each(function () {
                     var b = this.getBBox();
                     if (b.width > maxWidth) {

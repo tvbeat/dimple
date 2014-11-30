@@ -197,14 +197,7 @@
                 if (axis.shapes === null) {
                     // Add a group for the axes to allow css formatting
                     axis.shapes = this._group.append("g")
-                        .attr("class", "dimple-axis")
-                        .each(function () {
-                            if (!chart.noFormats) {
-                                d3.select(this)
-                                    .style("font-family", axis.fontFamily)
-                                    .style("font-size", axis._getFontSize());
-                            }
-                        });
+                        .attr("class", "dimple-axis");
                     firstDraw = true;
                 }
                 // If this is the first x and there is a y axis cross them at zero
@@ -247,12 +240,6 @@
                             .call(axis._draw.tickSize(gridSize, 0, 0).tickFormat(""))
                             .attr("transform", gridTransform);
                     }
-                }
-                // Set some initial css values
-                if (!this.noFormats) {
-                    handleTrans(axis.shapes.selectAll("text"))
-                        .style("font-family", axis.fontFamily)
-                        .style("font-size", axis._getFontSize());
                 }
                 // Rotate labels, this can only be done once the formats are set
                 if (axis.measure === null || axis.measure === undefined) {
@@ -385,14 +372,7 @@
                         .attr("y", titleY)
                         .attr("text-anchor", "middle")
                         .attr("transform", rotate)
-                        .text(axis.title !== undefined ? axis.title : (axis.categoryFields === null || axis.categoryFields === undefined || axis.categoryFields.length === 0 ? axis.measure : axis.categoryFields.join("/")))
-                        .each(function () {
-                            if (!chart.noFormats) {
-                                d3.select(this)
-                                    .style("font-family", axis.fontFamily)
-                                    .style("font-size", axis._getFontSize());
-                            }
-                        });
+                        .text(axis.title !== undefined ? axis.title : (axis.categoryFields === null || axis.categoryFields === undefined || axis.categoryFields.length === 0 ? axis.measure : axis.categoryFields.join("/")));
 
                     // Offset Y position to baseline. This previously used dominant-baseline but this caused
                     // browser inconsistency
