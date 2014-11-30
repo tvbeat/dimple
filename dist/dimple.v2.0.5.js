@@ -401,6 +401,11 @@
             this._min = (this.overrideMin !== null ? this.overrideMin : this._min);
             this._max = (this.overrideMax !== null ? this.overrideMax : this._max);
 
+            // Sometimes this happens if `overrideMin` is defined but `_min` iz zero
+            if (this._min > this._max) {
+                this._min = this._max;
+            }
+
             // If this is an x axis
             if (this.position === "x" && (this._scale === null || refactor)) {
                 if (this._hasTimeField()) {
@@ -1646,14 +1651,7 @@
                 if (axis.shapes === null) {
                     // Add a group for the axes to allow css formatting
                     axis.shapes = this._group.append("g")
-                        .attr("class", "dimple-axis")
-                        .each(function () {
-                            if (!chart.noFormats) {
-                                d3.select(this)
-                                    .style("font-family", axis.fontFamily)
-                                    .style("font-size", axis._getFontSize());
-                            }
-                        });
+                        .attr("class", "dimple-axis");
                     firstDraw = true;
                 }
                 // If this is the first x and there is a y axis cross them at zero
@@ -1695,22 +1693,6 @@
                         handleTrans(axis.gridlineShapes)
                             .call(axis._draw.tickSize(gridSize, 0, 0).tickFormat(""))
                             .attr("transform", gridTransform);
-                    }
-                }
-                // Set some initial css values
-                if (!this.noFormats) {
-                    handleTrans(axis.shapes.selectAll("text"))
-                        .style("font-family", axis.fontFamily)
-                        .style("font-size", axis._getFontSize());
-                    handleTrans(axis.shapes.selectAll("path, line"))
-                        .style("fill", "none")
-                        .style("stroke", "black")
-                        .style("shape-rendering", "crispEdges");
-                    if (axis.gridlineShapes !== null) {
-                        handleTrans(axis.gridlineShapes.selectAll("line"))
-                            .style("fill", "none")
-                            .style("stroke", "lightgray")
-                            .style("opacity", 0.8);
                     }
                 }
                 // Rotate labels, this can only be done once the formats are set
@@ -1844,14 +1826,7 @@
                         .attr("y", titleY)
                         .attr("text-anchor", "middle")
                         .attr("transform", rotate)
-                        .text(axis.title !== undefined ? axis.title : (axis.categoryFields === null || axis.categoryFields === undefined || axis.categoryFields.length === 0 ? axis.measure : axis.categoryFields.join("/")))
-                        .each(function () {
-                            if (!chart.noFormats) {
-                                d3.select(this)
-                                    .style("font-family", axis.fontFamily)
-                                    .style("font-size", axis._getFontSize());
-                            }
-                        });
+                        .text(axis.title !== undefined ? axis.title : (axis.categoryFields === null || axis.categoryFields === undefined || axis.categoryFields.length === 0 ? axis.measure : axis.categoryFields.join("/")));
 
                     // Offset Y position to baseline. This previously used dominant-baseline but this caused
                     // browser inconsistency
@@ -2109,13 +2084,6 @@
                 })
                 .text(function(d) {
                     return d.key;
-                })
-                .call(function () {
-                    if (!self.chart.noFormats) {
-                        this.style("font-family", self.fontFamily)
-                            .style("font-size", self._getFontSize())
-                            .style("shape-rendering", "crispEdges");
-                    }
                 })
                 .each(function () {
                     var b = this.getBBox();
@@ -2651,13 +2619,7 @@
                 }, this);
                 this.storyLabel = this.chart._group.append("text")
                     .attr("x", this.chart._xPixels() + this.chart._widthPixels() * 0.01)
-                    .attr("y", this.chart._yPixels() + (this.chart._heightPixels() / 35 > 10 ? this.chart._heightPixels() / 35 : 10) * (xCount > 1 ? 1.25 : -1))
-                    .call(function () {
-                        if (!chart.noFormats) {
-                            this.style("font-family", self.fontFamily)
-                                .style("font-size", self._getFontSize());
-                        }
-                    });
+                    .attr("y", this.chart._yPixels() + (this.chart._heightPixels() / 35 > 10 ? this.chart._heightPixels() / 35 : 10) * (xCount > 1 ? 1.25 : -1));
             }
             this.storyLabel
                 .transition().duration(duration * 0.2)
