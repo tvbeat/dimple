@@ -3041,15 +3041,17 @@
                         .text(sign);
                 },
                 deselectTimePoint = function() {
-                    chart.svg.selectAll('path.dimple-line').classed('grayed', false);
-                    chart.svg.select('g.timePointSelect.remove').remove();
-                    chart.svg.select('line.selected').remove();
-                    chart.svg.selectAll('circle')
-                        .style('opacity', 0)
-                        .classed('stayVisible', false);
+                    if (d3.select('.timePointSelect.remove').node()) {
+                        chart.svg.selectAll('path.dimple-line').classed('grayed', false);
+                        chart.svg.select('g.timePointSelect.remove').remove();
+                        chart.svg.select('line.selected').remove();
+                        chart.svg.selectAll('circle')
+                            .style('opacity', 0)
+                            .classed('stayVisible', false);
 
-                    if (typeof series.setTimePoint === 'function') {
-                        series.setTimePoint(null);
+                        if (typeof series.setTimePoint === 'function') {
+                            series.setTimePoint(null);
+                        }
                     }
                 },
                 selectTimePoint = function() {
@@ -3917,20 +3919,22 @@
                     return group;
                 },
                 deselectTimePoint = function() {
-                    chart.svg.selectAll('path.dimple-line').classed('grayed', false);
-                    if (timePointRemove) {
-                        timePointRemove.remove();
-                        timePointRemove = null;
-                    }
-                    if (selectedLine) {
-                        selectedLine.remove();
-                        selectedLine = null;
-                    }
-                    chart.svg.selectAll('circle.dimple-marker')
-                        .style('opacity', 0);
+                    if (d3.select('.timePointSelect.remove').node()) {
+                        chart.svg.selectAll('path.dimple-line').classed('grayed', false);
+                        if (timePointRemove) {
+                            timePointRemove.remove();
+                            timePointRemove = null;
+                        }
+                        if (selectedLine) {
+                            selectedLine.remove();
+                            selectedLine = null;
+                        }
+                        chart.svg.selectAll('circle.dimple-marker')
+                            .style('opacity', 0);
 
-                    if (typeof series.setTimePoint === 'function') {
-                        series.setTimePoint(null);
+                        if (typeof series.setTimePoint === 'function') {
+                            series.setTimePoint(null);
+                        }
                     }
                 },
                 selectTimePoint = function() {

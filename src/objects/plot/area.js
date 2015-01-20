@@ -225,15 +225,17 @@
                         .text(sign);
                 },
                 deselectTimePoint = function() {
-                    chart.svg.selectAll('path.dimple-line').classed('grayed', false);
-                    chart.svg.select('g.timePointSelect.remove').remove();
-                    chart.svg.select('line.selected').remove();
-                    chart.svg.selectAll('circle')
-                        .style('opacity', 0)
-                        .classed('stayVisible', false);
+                    if (d3.select('.timePointSelect.remove').node()) {
+                        chart.svg.selectAll('path.dimple-line').classed('grayed', false);
+                        chart.svg.select('g.timePointSelect.remove').remove();
+                        chart.svg.select('line.selected').remove();
+                        chart.svg.selectAll('circle')
+                            .style('opacity', 0)
+                            .classed('stayVisible', false);
 
-                    if (typeof series.setTimePoint === 'function') {
-                        series.setTimePoint(null);
+                        if (typeof series.setTimePoint === 'function') {
+                            series.setTimePoint(null);
+                        }
                     }
                 },
                 selectTimePoint = function() {
