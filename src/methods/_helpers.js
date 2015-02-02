@@ -236,6 +236,9 @@
                 }
             }
             return leaveEveryNth;
-        }
+        },
 
+        bisectDate: function(d) {
+            return d3.bisector(function(d) { return d.cx; }).left;
+        }
     };
