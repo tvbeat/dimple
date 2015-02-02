@@ -3687,7 +3687,7 @@
         }
     };
 
- // Copyright: 2014 PMSI-AlignAlytics
+    // Copyright: 2014 PMSI-AlignAlytics
     // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
     // Source: /src/objects/plot/line.js
     /*global  $*/
@@ -3723,48 +3723,16 @@
                 updated,
                 removed,
                 orderedSeriesArray,
-                bisectDate,
-                verticalLine = null,
-                timePointSelect,
-                timePointRemove = null,
                 selectedLine = null,
-                xCoordinate,
-                activeLine = {},
                 g,
                 seriesKeys = [],
-                marker = null,
-                setActiveLine = function(d) {
-                    if (marker !== null) {
-                        marker.style('opacity', 0);
-                    }
-                    var activeId = false,
-                        key;
-
-                    if (d.key) {
-                        activeLine = d;
-                        activeId = activeLine.key[0];
-                        if (typeof activeId === "string" && activeId.indexOf(' ') > 0) {
-                            key = activeId.replace(/\s/g, '-');
-                        } else {
-                            key = activeId;
-                        }
-                        marker = chart.svg.select('circle.dimple-marker.dimple-' + key);
-                    } else {
-                        activeLine = {};
-                    }
-
-                    chart.svg.selectAll('path.dimple-line')
-                        .classed('active', false)
-                        .filter(function() { return this.id === activeId.toString(); })
-                        .classed('active', true);
-                },
                 onEnter = function () {
                     return function (e, shape, chart, series) {
                         if (series.disableLineMarkers !== true) {
                             var line = chart.lineData.filter(function(line) {
                                 return line.key[0] === e.aggField[0];
                             });
-                            setActiveLine(line[0]);
+                            dimple._tooltipWithLine.setActiveLine.bind(dimple._tooltipWithLine)(line[0]);
                         }
                     };
                 },
@@ -3796,213 +3764,7 @@
                         .x(function (d) { return (series.x._hasCategories() || !originProperty ? d.x : series.x[originProperty]); })
                         .y(function (d) { return (series.y._hasCategories() || !originProperty ? d.y : series.y[originProperty]); })
                         .interpolate(inter);
-                },
-                //custom vertical lines
-                showTooltipWithLine = function () {
-
-                    if (lineData && lineData.length === 0) {
-                        return;
-                    }
-
-                    var x0,
-                        i,
-                        line,
-                        d0,
-                        d1,
-                        d,
-                        pos;
-
-                    if (activeLine.keyString) {
-                        line = activeLine;
-                    } else {
-                        line = lineData[0];
-                    }
-
-                    x0 = series.x._scale.invert(d3.mouse(this)[0]);
-                    i  = bisectDate(line.data, x0, 1);
-
-                    if (i === 0) {
-                        d = line.data[i];
-                    } else if (i >= line.data.length) {
-                        i = line.data.length - 1;
-                        d = line.data[i];
-                    } else {
-                        d0 = line.data[i - 1];
-                        d1 = line.data[i];
-
-                        if (x0 - d0.cx > d1.cx - x0) {
-                            d = d1;
-                        } else {
-                            d = d0;
-                            i--;
-                        }
-                    }
-                    xCoordinate = series.x._scale(d.cx) + 1;
-
-                    if (activeLine.keyString) {
-                        pos = d3.mouse(this);
-                        pos[0] += 40;
-                        if (!($('div.tooltip:visible').length > 0)) {
-                            dimple._showPointTooltip(d, null, chart, series, pos);
-                        }
-                        updateTooltipPosition(pos);
-                        // show marker
-                        if (marker !== null) {
-                            marker
-                                .attr("cx", activeLine.points[i].x)
-                                .attr("cy", activeLine.points[i].y)
-                                .style('opacity', 1);
-                        }
-
-                        xCoordinate = activeLine.points[i].x + 1;
-                    }
-
-                    if (verticalLine) {
-                        verticalLine
-                            .style("transform", "translate(" + xCoordinate + "px,0px)")
-                            .attr('data-i', i);
-                    }
-
-                    if (timePointSelect) {
-                        timePointSelect.style("transform", "translate(" + (xCoordinate - 9) + "px,0px)");
-                    }
-                },
-                hideTooltipWithLine = function(e) {
-                    if (!e && window.event) {
-                        e = event;
-                    }
-                    var goingto = e.relatedTarget || event.toElement,
-                        pos;
-
-                    //unless target leave is tooltip
-                    if ($('div.chart-tooltip:visible').has(goingto).length === 0) {
-                        dimple._removeTooltip(null, null, chart, series);
-                        setActiveLine(false);
-                        if (verticalLine) {
-                            verticalLine.style("transform", "translate(-1px,0px)");
-                        }
-                        if (timePointSelect) {
-                            timePointSelect.style("transform", "translate(-16px,0px)");
-                        }
-                        if (marker) {
-                            marker.style('opacity', 0);
-                        }
-                    } else {
-                        pos = d3.mouse(this);
-                        pos[0] += d3.mouse($('div.chart-tooltip:visible')[0])[0];
-                        updateTooltipPosition(pos);
-                    }
-                },
-                createTimePointButton = function(onClick, xPos, sign, className, i) {
-                    var group = chart.svg.select('g').append('g');
-
-                    group.attr('class', className)
-                        .on('click', onClick)
-                        .style('transform', "translate(" + xPos + "px, 0px)")
-                        .attr('data-i', i);
-
-                    group.append('rect')
-                        .attr('width', '16')
-                        .attr('height', '16')
-                        .attr('fill', '#666666')
-                        .attr('style', 'cursor: pointer;');
-
-                    group.append('text')
-                        .attr({
-                            'x': 8,
-                            'y': 12
-                        })
-                        .attr('style', 'cursor: pointer;text-anchor: middle; font-family: sans-serif; font-size: 13px;')
-                        .attr('fill', 'white')
-                        .text(sign);
-
-                    return group;
-                },
-                deselectTimePoint = function() {
-                    if (d3.select('.timePointSelect.remove').node()) {
-                        chart.svg.selectAll('path.dimple-line').classed('grayed', false);
-                        if (timePointRemove) {
-                            timePointRemove.remove();
-                            timePointRemove = null;
-                        }
-                        if (selectedLine) {
-                            selectedLine.remove();
-                            selectedLine = null;
-                        }
-                        chart.svg.selectAll('circle.dimple-marker')
-                            .style('opacity', 0);
-
-                        if (typeof series.setTimePoint === 'function') {
-                            series.setTimePoint(null);
-                        }
-                    }
-                },
-                selectTimePoint = function() {
-                    // clear currently selected point
-                    deselectTimePoint();
-                    if (!this.classList.contains("remove")) {
-                        var i = verticalLine.attr('data-i');
-                        xCoordinate = chart.lineData[0].points[i].x;
-                        marker = null;
-                        // show points for every line
-                        chart.lineData.forEach(function(item, i) {
-                            var x0 = series.x._scale.invert(xCoordinate),
-                                j = bisectDate(chart.lineData[i].data, x0, 1),
-                                d0 = item.data[parseInt(j, 10) - 1],
-                                d1 = item.data[parseInt(j, 10)],
-                                d,
-                                key = item.keyString.replace(/\s/g, '-');
-
-                            if (d0 === undefined || d1 === undefined) {
-                                return;
-                            }
-
-                            if (x0 - d0.cx > d1.cx - x0) {
-                                d = d1;
-                            } else {
-                                d = d0;
-                                j = parseInt(j, 10) - 1;
-                            }
-                            // always keep first item for tooltip
-                            item.markerData = [item.data[0], d];
-                            drawMarkers(item);
-                            chart.svg.selectAll('circle.dimple-marker.' + key).style('opacity', 1);
-                            chart.svg.select('circle.dimple-marker.' + key).style('opacity', 0);
-                        });
-
-                        chart.svg.selectAll('path.dimple-line').classed('grayed', true);
-                        //vertical line
-                        selectedLine = chart.svg.select('svg > g').insert("line", ":first-child")
-                            .attr({
-                                'x1': xCoordinate,
-                                'y1': 16,
-                                'x2': xCoordinate,
-                                'y2': grid.height - xAxis.height
-                            })
-                            .attr('stroke', 'lightgray')
-                            .attr('class', 'selected');
-
-                        // box for removing selected time point
-                        timePointRemove = createTimePointButton(deselectTimePoint, (xCoordinate - 8), 'x', 'timePointSelect remove', i);
-                        series.setTimePoint(chart.lineData[0].data[i].origData['time.interval']);
-                    }
-                },
-                updateTooltipPosition = function() {
-                    if (series.updateTooltipPosition) {
-                        updateTooltipPosition = series.updateTooltipPosition.bind(series);
-                    } else {
-                        updateTooltipPosition = function(x) { return x; };
-                    }
-                    return updateTooltipPosition();
                 };
-
-            bisectDate = d3.bisector(function(d) { return d.cx; }).left;
-
-            // clear selected time point
-            if (chart.timePointSelectable && chart.series[0].clearTimePoints) {
-                deselectTimePoint();
-                chart.series[0].clearTimePoints = false;
-            }
 
             // Handle the special interpolation handling for step
             interpolation = (series.interpolation === "step" ? "step-after" : series.interpolation);
@@ -4138,73 +3900,16 @@
                     drawMarkers(d);
                 });
 
-            chart.svg
-                    .on('mousemove', null)
-                    .on('mouseleave', null);
-
-            chart.svg
-                .on('mousemove', showTooltipWithLine)
-                .on('mouseleave', hideTooltipWithLine);
-
-            if (chart.svg.selectAll('.verticalLine')[0].length === 0) {
-                g = chart.svg.select('g');
-                grid = g.node().getBBox();
-                xAxis = chart.svg.select('g.dimple-axis').node().getBBox();
-
-                verticalLine = g.insert("line", ":first-child")
-                    .attr({
-                        'x1': -1,
-                        'y1': grid.y + (typeof chart.y === 'number' ? chart.y : 30) - (chart.timePointSelectable ? 18 : 0),
-                        'x2': -1,
-                        'y2': grid.height - xAxis.height
-                    })
-                    .attr('stroke', 'lightgray')
-                    .attr('class', 'verticalLine');
-
-                // time point selection  box
-                if (chart.timePointSelectable) {
-                    timePointSelect = createTimePointButton(selectTimePoint, -16, '+', 'timePointSelect', 0);
-                }
-            } else {
-                verticalLine = chart.svg.select('.verticalLine');
-                if (chart.timePointSelectable) {
-                    timePointSelect = chart.svg.select('.timePointSelect');
-                }
-            }
             chart.lineData = lineData;
+            // init tooltip
+            var initTooltip = dimple._tooltipWithLine.init.bind(dimple._tooltipWithLine)
+            initTooltip(chart, series, drawMarkers);
 
-            // if there was selected time point
-            if (chart.svg.select('g.timePointSelect.remove')[0][0] !== null) {
-                i = chart.svg.select('g.timePointSelect.remove').attr('data-i');
-                xCoordinate = lineData[0].points[i].x;
-                marker = null;
-                // TODO: duplicated code from selectTimePoint()
-                chart.lineData.forEach(function(item) {
-                    var x0 = series.x._scale.invert(xCoordinate),
-                        j = bisectDate(chart.lineData[0].data, x0, 1),
-                        d0 = item.data[parseInt(j, 10) - 1],
-                        d1 = item.data[parseInt(j, 10)],
-                        d,
-                        key = item.keyString.replace(/\s/g, '-');
-                    if (x0 - d0.cx > d1.cx - x0) {
-                        d = d1;
-                    } else {
-                        d = d0;
-                        j = parseInt(j, 10) - 1;
-                    }
-                    // always keep first item for tooltip
-                    item.markerData = [item.data[0], d];
-
-                    drawMarkers(item);
-                    chart.svg.selectAll('circle.dimple-marker.' + key).style('opacity', 1);
-                    chart.svg.select('circle.dimple-marker.' + key).style('opacity', 0);
-                });
-            }
             // Update
             updated = chart._handleTransition(theseShapes, 0, chart)
                 .attr("d", function (d) { return d.update; })
                 .on('mouseenter', function(d) {
-                    setActiveLine(d);
+                    dimple._tooltipWithLine.setActiveLine.bind(dimple._tooltipWithLine)(d);
                 });
 
             // Remove
@@ -4932,8 +4637,11 @@
                 }
             }
             return leaveEveryNth;
-        }
+        },
 
+        bisectDate: function(d) {
+            return d3.bisector(function(d) { return d.cx; }).left;
+        }
     };
     // Copyright: 2014 PMSI-AlignAlytics
     // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
@@ -5287,6 +4995,322 @@
             }
         }
     };
+// Source: /src/methods/_timePoint.js
+/*global  $*/
+dimple._timePoint = {
+  selectedLine : null,
+  timePointRemove: null,
+  chart : null,
+  series: null,
+  grid: null,
+  xAxis: null,
+  create: function(chart, series, onClick, xPos, sign, className, i, drawMarkers) {
+    var g,
+        group;
+
+    g = chart.svg.select('g');
+
+    this.chart       = chart;
+    this.series      = series;
+    this.drawMarkers = drawMarkers;
+    this.grid        = g.node().getBBox();
+    this.xAxis       = this.chart.svg.select('g.dimple-axis').node().getBBox();
+
+    if (dimple._tooltipWithLine.verticalLine != null) {
+      dimple._tooltipWithLine.verticalLine.remove()
+    }
+
+    dimple._tooltipWithLine.verticalLine = g.insert("line", ":first-child")
+      .attr({
+          'x1': -1,
+          'y1': this.grid.y + (typeof this.chart.y === 'number' ? this.chart.y : 30) - (this.chart.timePointSelectable ? 18 : 0),
+          'x2': -1,
+          'y2': this.grid.height - this.xAxis.height
+      })
+      .attr('stroke', 'lightgray')
+      .attr('class', 'verticalLine');
+
+    group = this.chart.svg.select('g').append('g');
+    group.attr('class', className)
+        .on('click', onClick.bind(this))
+        .style('transform', "translate(" + xPos + "px, 0px)")
+        .attr('data-i', i);
+
+    group.append('rect')
+        .attr('width', '16')
+        .attr('height', '16')
+        .attr('fill', '#666666')
+        .attr('style', 'cursor: pointer;');
+
+    group.append('text')
+        .attr({
+            'x': 8,
+            'y': 12
+        })
+        .attr('style', 'cursor: pointer;text-anchor: middle; font-family: sans-serif; font-size: 13px;')
+        .attr('fill', 'white')
+        .text(sign);
+
+    return group;
+  },
+  deselect: function() {
+    this.chart.svg.selectAll('path.dimple-line').classed('grayed', false);
+    if (this.timePointRemove) {
+      this.timePointRemove.remove();
+      this.timePointRemove = null;
+    }
+    if (this.selectedLine) {
+      this.selectedLine.remove();
+      this.selectedLine = null;
+    }
+    this.chart.svg.selectAll('circle.dimple-marker')
+      .style('opacity', 0);
+
+    if (d3.select('.timePointSelect.remove').node()) {
+      if (typeof this.series.setTimePoint === 'function') {
+        this.series.setTimePoint(null);
+      }
+    }
+  },
+  select: function() {
+      // clear currently selected point
+      this.deselect();
+      if (!d3.select('.timePointSelect.remove').node()) {
+          var i = dimple._tooltipWithLine.verticalLine.attr('data-i');
+          var xCoordinate = this.chart.lineData[0].points[i].x;
+          var marker = null;
+          // show points for every line
+          var this_ = this;
+          this.chart.lineData.forEach(function(item, i) {
+              var x0 = this_.series.x._scale.invert(xCoordinate),
+                  j = dimple._helpers.bisectDate()(this_.chart.lineData[i].data, x0, 1),
+                  d0 = item.data[parseInt(j, 10) - 1],
+                  d1 = item.data[parseInt(j, 10)],
+                  d,
+                  key = item.keyString.replace(/\s/g, '-');
+
+              if (d0 === undefined || d1 === undefined) {
+                  return;
+              }
+
+              if (x0 - d0.cx > d1.cx - x0) {
+                  d = d1;
+              } else {
+                  d = d0;
+                  j = parseInt(j, 10) - 1;
+              }
+              // always keep first item for tooltip
+              item.markerData = [item.data[0], d];
+              this_.drawMarkers(item)
+              this_.chart.svg.selectAll('circle.dimple-marker.' + key).style('opacity', 1);
+              this_.chart.svg.select('circle.dimple-marker.' + key).style('opacity', 0);
+          });
+
+          this.chart.svg.selectAll('path.dimple-line').classed('grayed', true);
+          //vertical line
+          this.selectedLine = this.chart.svg.select('svg > g').insert("line", ":first-child")
+              .attr({
+                  'x1': xCoordinate,
+                  'y1': 16,
+                  'x2': xCoordinate,
+                  'y2': this.grid.height - this.xAxis.height
+              })
+              .attr('stroke', 'lightgray')
+              .attr('class', 'selected');
+
+          // box for removing selected time point
+          this.timePointRemove = this.create(this.chart, this.series, this.deselect, (xCoordinate - 8), 'x', 'timePointSelect remove', i, this.drawMarkers);
+          this.series.setTimePoint(this.chart.lineData[0].data[i].origData['time.interval']);
+      }
+  }
+}
+// Source: /src/methods/_tooltipWithLine.js
+/*global  $*/
+dimple._tooltipWithLine = {
+  timePointSelect: null,
+  verticalLine: null,
+  line: null,
+  marker: null,
+  series: null,
+  activeLine: null,
+  chart: null,
+  xCoordinate: null,
+  setActiveLine: function(d) {
+      if (this.marker !== null) {
+        this.marker.style('opacity', 0);
+      }
+      var activeId = false,
+          key;
+
+      if (d.key) {
+          this.activeLine = d;
+          activeId = this.activeLine.key[0];
+          if (typeof activeId === "string" && activeId.indexOf(' ') > 0) {
+              key = activeId.replace(/\s/g, '-');
+          } else {
+              key = activeId;
+          }
+          this.marker = this.chart.svg.select('circle.dimple-marker.dimple-' + key);
+      } else {
+          this.activeLine = {};
+      }
+
+      this.chart.svg.selectAll('path.dimple-line')
+          .classed('active', false)
+          .filter(function() { return this.id === activeId.toString(); })
+          .classed('active', true);
+  },
+  init: function(chart, series, drawMarkers) {
+    this.chart = chart;
+    this.series = series;
+    this.drawMarkers = drawMarkers;
+
+    this.initMouseEvents();
+    this.initVerticalLine();
+    this.initxCoordinate();
+  },
+  initMouseEvents: function() {
+    this.chart.svg
+      .on('mousemove', null)
+      .on('mouseleave', null);
+
+    this.chart.svg
+      .on('mousemove', this.show.bind(this))
+      .on('mouseleave', this.hide.bind(this));
+  },
+  initVerticalLine: function() {
+    // clear selected time point
+    if (this.chart.timePointSelectable && this.chart.series[0].clearTimePoints) {
+      dimple._timePoint.deselect.bind(dimple._timePoint)
+      this.chart.series[0].clearTimePoints = false;
+    }
+
+    if (this.chart.svg.selectAll('.verticalLine')[0].length === 0) {
+      // time point selection box
+      if (this.chart.timePointSelectable) {
+          this.timePointSelect = dimple._timePoint.create.bind(dimple._timePoint)(this.chart, this.series, dimple._timePoint.select, -16, '+', 'timePointSelect', 0, this.drawMarkers.bind(dimple.plot.line));
+      }
+    } else {
+      this.verticalLine = this.chart.svg.select('.verticalLine');
+      if (this.chart.timePointSelectable) {
+          this.timePointSelect = this.chart.svg.select('.timePointSelect');
+      }
+    }
+  },
+  initxCoordinate: function() {
+    if (this.chart.svg.select('g.timePointSelect.remove')[0][0] !== null) {
+      i = this.chart.svg.select('g.timePointSelect.remove').attr('data-i');
+      this.xCoordinate = this.chart.lineData[0].points[i].x;
+    }
+  },
+  show: function () {
+    if (this.chart.lineData && this.chart.lineData.length === 0) {
+        return;
+    }
+
+    var x0,
+        i,
+        line,
+        d0,
+        d1,
+        d,
+        pos;
+
+    if (this.activeLine && this.activeLine.keyString) {
+        this.line = this.activeLine;
+    } else {
+        this.line = this.chart.lineData[0];
+    }
+
+    x0 = this.series.x._scale.invert(d3.mouse(this.chart.svg[0][0])[0]);
+    i  = dimple._helpers.bisectDate()(this.line.data, x0, 1);
+
+    if (i === 0) {
+        d = this.line.data[i];
+    } else if (i >= this.line.data.length) {
+        i = this.line.data.length - 1;
+        d = this.line.data[i];
+    } else {
+        d0 = this.line.data[i - 1];
+        d1 = this.line.data[i];
+
+        if (x0 - d0.cx > d1.cx - x0) {
+            d = d1;
+        } else {
+            d = d0;
+            i--;
+        }
+    }
+    this.xCoordinate = this.series.x._scale(d.cx) + 1;
+
+    if (this.activeLine && this.activeLine.keyString) {
+        pos = d3.mouse(this.chart.svg[0][0]);
+        pos[0] += 40;
+        if (!($('div.tooltip:visible').length > 0)) {
+            dimple._showPointTooltip(d, null, this.chart, this.series, pos);
+        }
+        this.updatePosition(pos);
+        // show marker
+        if (this.marker !== null) {
+            this.marker
+                .attr("cx", this.activeLine.points[i].x)
+                .attr("cy", this.activeLine.points[i].y)
+                .style('opacity', 1);
+        }
+
+        this.xCoordinate = this.activeLine.points[i].x + 1;
+    }
+
+    if (this.verticalLine) {
+        this.verticalLine
+          .style("transform", "translate(" + this.xCoordinate + "px,0px)")
+          .attr('data-i', i);
+    }
+
+    if (this.timePointSelect) {
+        this.timePointSelect.style("transform", "translate(" + (this.xCoordinate - 9) + "px,0px)");
+    }
+  },
+  //hideTooltipWithLine
+  hide: function(e) {
+      if (!e && window.event) {
+          e = event;
+      }
+      var goingto = e.relatedTarget || event.toElement,
+          pos;
+
+      //unless target leave is tooltip
+      if ($('div.chart-tooltip:visible').has(goingto).length === 0) {
+          dimple._removeTooltip(null, null, this.chart, this.series);
+          this.activeLine = null;
+          this.chart.svg.selectAll('path.dimple-line').classed('active', false);
+          // setActiveLine(false);
+          if (this.verticalLine) {
+              this.verticalLine.style("transform", "translate(-1px,0px)");
+          }
+          if (this.timePointSelect) {
+              this.timePointSelect.style("transform", "translate(-16px,0px)");
+          }
+          if (this.marker) {
+              this.marker.style('opacity', 0);
+          }
+      } else {
+          pos = d3.mouse(this.chart.svg[0][0]);
+          pos[0] += d3.mouse($('div.chart-tooltip:visible')[0])[0];
+          this.updatePosition(pos);
+      }
+  },
+  //updateTooltipPosition
+  updatePosition: function(pos) {
+      var updatePosition;
+      if (this.series.updateTooltipPosition) {
+        updatePosition = this.series.updateTooltipPosition.bind(this.series);
+      } else {
+        updatePosition = function(x) { return x; };
+      }
+      return updatePosition(pos)
+  }
+}
     // Copyright: 2014 PMSI-AlignAlytics
     // License: "https://github.com/PMSI-AlignAlytics/dimple/blob/master/MIT-LICENSE.txt"
     // Source: /src/methods/filterData.js
