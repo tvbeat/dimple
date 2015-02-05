@@ -3728,6 +3728,7 @@
                 seriesKeys = [],
                 onEnter = function () {
                     return function (e, shape, chart, series) {
+                        // d3.select(shape).style("opacity", 1);
                         if (series.disableLineMarkers !== true) {
                             var line = chart.lineData.filter(function(line) {
                                 return line.key[0] === e.aggField[0];
@@ -3738,6 +3739,7 @@
                 },
                 onLeave = function () {
                     return function (e, shape, chart, series) {
+                        // d3.select(shape).style("opacity", (series.lineMarkers || lineData.data.length < 2 ? dimple._helpers.opacity(e, chart, series) : 0));
                         if (series) {
                             dimple._removeTooltip(e, shape, chart, series);
                         }
@@ -3873,7 +3875,9 @@
             } else {
                 theseShapes = series.shapes.data(lineData, function (d) { return d.key; });
             }
-
+            if (chart.showMarkers === true) {
+                series.lineMarkers = true;
+            }
             // Add
             theseShapes
                 .enter()
@@ -3896,7 +3900,8 @@
                 })
                 .each(function (d) {
                     // draw only first circle - for tooltip
-                    d.markerData = [d.data[0], d.data[1]];
+                    // d.markerData = [d.data[0], d.data[1]];
+                    d.markerData = d.data;
                     drawMarkers(d);
                 });
 
@@ -3908,6 +3913,11 @@
             // Update
             updated = chart._handleTransition(theseShapes, 0, chart)
                 .attr("d", function (d) { return d.update; })
+                .each(function (d) {
+                    // Pass line data to markers
+                    d.markerData = d.data;
+                    drawMarkers(d);
+                })
                 .on('mouseenter', function(d) {
                     dimple._tooltipWithLine.setActiveLine.bind(dimple._tooltipWithLine)(d);
                 });
@@ -5004,33 +5014,32 @@ dimple._timePoint = {
   series: null,
   grid: null,
   xAxis: null,
+  verticalLine: null,
   create: function(chart, series, onClick, xPos, sign, className, i, drawMarkers) {
     var g,
         group;
 
     g = chart.svg.select('g');
-
     this.chart       = chart;
     this.series      = series;
     this.drawMarkers = drawMarkers;
+
     if (this.grid === null) {
       this.grid  = g.node().getBBox();
       this.xAxis = this.chart.svg.select('g.dimple-axis').node().getBBox();
     }
 
-    if (dimple._tooltipWithLine.verticalLine != null) {
-      dimple._tooltipWithLine.verticalLine.remove()
+    if (dimple._tooltipWithLine.verticalLine === null) {
+      dimple._tooltipWithLine.verticalLine = g.insert("line", ":first-child")
+        .attr({
+            'x1': -1,
+            'y1': this.grid.y + (typeof this.chart.y === 'number' ? this.chart.y : 30) - (this.chart.timePointSelectable ? 18 : 0),
+            'x2': -1,
+            'y2': this.grid.height - this.xAxis.height
+        })
+        .attr('stroke', 'lightgray')
+        .attr('class', 'verticalLine');
     }
-
-    dimple._tooltipWithLine.verticalLine = g.insert("line", ":first-child")
-      .attr({
-          'x1': -1,
-          'y1': this.grid.y + (typeof this.chart.y === 'number' ? this.chart.y : 30) - (this.chart.timePointSelectable ? 18 : 0),
-          'x2': -1,
-          'y2': this.grid.height - this.xAxis.height
-      })
-      .attr('stroke', 'lightgray')
-      .attr('class', 'verticalLine');
 
     group = this.chart.svg.select('g').append('g');
     group.attr('class', className)
@@ -5057,7 +5066,7 @@ dimple._timePoint = {
   },
   deselect: function() {
     this.chart.svg.selectAll('path.dimple-line').classed('grayed', false);
-
+    this.chart.svg.selectAll('circle.dimple-marker').classed('grayed', false);
     if (d3.select('.timePointSelect.remove').node()) {
       if (typeof this.series.setTimePoint === 'function') {
         this.series.setTimePoint(null);
@@ -5072,20 +5081,22 @@ dimple._timePoint = {
       this.selectedLine.remove();
       this.selectedLine = null;
     }
-
-    this.chart.svg.selectAll('circle.dimple-marker')
-      .style('opacity', 0);
-
+    if (!this.series.lineMarkers) {
+      this.chart.svg.selectAll('circle.dimple-marker')
+        .style('opacity', 0);
+    }
   },
   select: function() {
       // clear currently selected point
       this.deselect();
       if (!d3.select('.timePointSelect.remove').node()) {
-          var i = dimple._tooltipWithLine.verticalLine.attr('data-i');
-          var xCoordinate = this.chart.lineData[0].points[i].x;
-          var marker = null;
+          var i = dimple._tooltipWithLine.verticalLine.attr('data-i'),
+              xCoordinate = this.chart.lineData[0].points[i].x,
+              marker = null,
+              allMarkers = null,
+              this_ = this;
+
           // show points for every line
-          var this_ = this;
           this.chart.lineData.forEach(function(item, i) {
               var x0 = this_.series.x._scale.invert(xCoordinate),
                   j = dimple._helpers.bisectDate()(this_.chart.lineData[i].data, x0, 1),
@@ -5105,10 +5116,18 @@ dimple._timePoint = {
                   j = parseInt(j, 10) - 1;
               }
               // always keep first item for tooltip
-              item.markerData = [item.data[0], d];
-              this_.drawMarkers(item)
-              this_.chart.svg.selectAll('circle.dimple-marker.' + key).style('opacity', 1);
-              this_.chart.svg.select('circle.dimple-marker.' + key).style('opacity', 0);
+              if (!this_.series.lineMarkers) {
+                item.markerData = [item.data[0], d];
+                this_.drawMarkers(item)
+                this_.chart.svg.selectAll('circle.dimple-marker.' + key).style('opacity', 1);
+                this_.chart.svg.select('circle.dimple-marker.' + key).style('opacity', 0);
+              } else {
+                allMarkers = this_.chart.svg.selectAll('circle.dimple-marker.' + key);
+                allMarkers.classed('grayed', true);
+                allMarkers.filter(function(marker, i) {
+                  return i === j;
+                }).classed('grayed', false);
+              }
           });
 
           this.chart.svg.selectAll('path.dimple-line').classed('grayed', true);
@@ -5141,7 +5160,7 @@ dimple._tooltipWithLine = {
   chart: null,
   xCoordinate: null,
   setActiveLine: function(d) {
-      if (this.marker !== null) {
+      if (this.marker !== null && !this.series.lineMarkers) {
         this.marker.style('opacity', 0);
       }
       var activeId = false,
@@ -5155,20 +5174,28 @@ dimple._tooltipWithLine = {
           } else {
               key = activeId;
           }
-          this.marker = this.chart.svg.select('circle.dimple-marker.dimple-' + key);
+          if (!this.series.lineMarkers) {
+            this.marker = this.chart.svg.select('circle.dimple-marker.dimple-' + key);
+          }
       } else {
           this.activeLine = {};
       }
 
       this.chart.svg.selectAll('path.dimple-line')
-          .classed('active', false)
-          .filter(function() { return this.id === activeId.toString(); })
-          .classed('active', true);
+        .classed('active', false)
+        .filter(function() { return this.id === activeId.toString(); })
+        .classed('active', true);
   },
   init: function(chart, series, drawMarkers) {
     this.chart = chart;
     this.series = series;
     this.drawMarkers = drawMarkers;
+    this.timePointSelect = null;
+    this.verticalLine = null;
+    this.line = null;
+    this.marker = null;
+    this.activeLine = null;
+    this.xCoordinate = null;
 
     this.initMouseEvents();
     this.initVerticalLine();
@@ -5192,6 +5219,7 @@ dimple._tooltipWithLine = {
 
     if (this.chart.svg.selectAll('.verticalLine')[0].length === 0) {
       // time point selection box
+      dimple._tooltipWithLine.verticalLine = null
       if (this.chart.timePointSelectable) {
           this.timePointSelect = dimple._timePoint.create.bind(dimple._timePoint)(this.chart, this.series, dimple._timePoint.select, -16, '+', 'timePointSelect', 0, this.drawMarkers.bind(dimple.plot.line));
       }
@@ -5296,7 +5324,7 @@ dimple._tooltipWithLine = {
           if (this.timePointSelect) {
               this.timePointSelect.style("transform", "translate(-16px,0px)");
           }
-          if (this.marker) {
+          if (this.marker && !this.series.lineMarkers) {
               this.marker.style('opacity', 0);
           }
       } else {

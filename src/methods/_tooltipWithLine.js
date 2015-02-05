@@ -10,7 +10,7 @@ dimple._tooltipWithLine = {
   chart: null,
   xCoordinate: null,
   setActiveLine: function(d) {
-      if (this.marker !== null) {
+      if (this.marker !== null && !this.series.lineMarkers) {
         this.marker.style('opacity', 0);
       }
       var activeId = false,
@@ -24,15 +24,17 @@ dimple._tooltipWithLine = {
           } else {
               key = activeId;
           }
-          this.marker = this.chart.svg.select('circle.dimple-marker.dimple-' + key);
+          if (!this.series.lineMarkers) {
+            this.marker = this.chart.svg.select('circle.dimple-marker.dimple-' + key);
+          }
       } else {
           this.activeLine = {};
       }
 
       this.chart.svg.selectAll('path.dimple-line')
-          .classed('active', false)
-          .filter(function() { return this.id === activeId.toString(); })
-          .classed('active', true);
+        .classed('active', false)
+        .filter(function() { return this.id === activeId.toString(); })
+        .classed('active', true);
   },
   init: function(chart, series, drawMarkers) {
     this.chart = chart;
@@ -61,6 +63,7 @@ dimple._tooltipWithLine = {
 
     if (this.chart.svg.selectAll('.verticalLine')[0].length === 0) {
       // time point selection box
+      dimple._tooltipWithLine.verticalLine = null
       if (this.chart.timePointSelectable) {
           this.timePointSelect = dimple._timePoint.create.bind(dimple._timePoint)(this.chart, this.series, dimple._timePoint.select, -16, '+', 'timePointSelect', 0, this.drawMarkers.bind(dimple.plot.line));
       }
@@ -165,7 +168,7 @@ dimple._tooltipWithLine = {
           if (this.timePointSelect) {
               this.timePointSelect.style("transform", "translate(-16px,0px)");
           }
-          if (this.marker) {
+          if (this.marker && !this.series.lineMarkers) {
               this.marker.style('opacity', 0);
           }
       } else {
