@@ -16,8 +16,11 @@ dimple._timePoint = {
     this.chart       = chart;
     this.series      = series;
     this.drawMarkers = drawMarkers;
-    this.grid        = g.node().getBBox();
-    this.xAxis       = this.chart.svg.select('g.dimple-axis').node().getBBox();
+
+    if (this.grid === null) {
+      this.grid  = g.node().getBBox();
+      this.xAxis = this.chart.svg.select('g.dimple-axis').node().getBBox();
+    }
 
     if (dimple._tooltipWithLine.verticalLine != null) {
       dimple._tooltipWithLine.verticalLine.remove()
@@ -58,6 +61,13 @@ dimple._timePoint = {
   },
   deselect: function() {
     this.chart.svg.selectAll('path.dimple-line').classed('grayed', false);
+
+    if (d3.select('.timePointSelect.remove').node()) {
+      if (typeof this.series.setTimePoint === 'function') {
+        this.series.setTimePoint(null);
+      }
+    }
+
     if (this.timePointRemove) {
       this.timePointRemove.remove();
       this.timePointRemove = null;
@@ -66,14 +76,10 @@ dimple._timePoint = {
       this.selectedLine.remove();
       this.selectedLine = null;
     }
+
     this.chart.svg.selectAll('circle.dimple-marker')
       .style('opacity', 0);
 
-    if (d3.select('.timePointSelect.remove').node()) {
-      if (typeof this.series.setTimePoint === 'function') {
-        this.series.setTimePoint(null);
-      }
-    }
   },
   select: function() {
       // clear currently selected point
