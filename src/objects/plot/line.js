@@ -39,7 +39,6 @@
                 seriesKeys = [],
                 onEnter = function () {
                     return function (e, shape, chart, series) {
-                        // d3.select(shape).style("opacity", 1);
                         if (series.disableLineMarkers !== true) {
                             var line = chart.lineData.filter(function(line) {
                                 return line.key[0] === e.aggField[0];
@@ -50,7 +49,6 @@
                 },
                 onLeave = function () {
                     return function (e, shape, chart, series) {
-                        // d3.select(shape).style("opacity", (series.lineMarkers || lineData.data.length < 2 ? dimple._helpers.opacity(e, chart, series) : 0));
                         if (series) {
                             dimple._removeTooltip(e, shape, chart, series);
                         }
