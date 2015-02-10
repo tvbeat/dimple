@@ -3899,9 +3899,12 @@
                     }
                 })
                 .each(function (d) {
-                    // draw only first circle - for tooltip
-                    // d.markerData = [d.data[0], d.data[1]];
-                    d.markerData = d.data;
+                    if (chart.showMarkers) {
+                        d.markerData = d.data;
+                    } else {
+                        // draw only first circle - for tooltip
+                        d.markerData = [d.data[0], d.data[1]];
+                    }
                     drawMarkers(d);
                 });
 
@@ -3915,7 +3918,12 @@
                 .attr("d", function (d) { return d.update; })
                 .each(function (d) {
                     // Pass line data to markers
-                    d.markerData = d.data;
+                    if (chart.showMarkers) {
+                        d.markerData = d.data;
+                    } else {
+                        // draw only first circle - for tooltip
+                        d.markerData = [d.data[0], d.data[1]];
+                    }
                     drawMarkers(d);
                 })
                 .on('mouseenter', function(d) {
@@ -5014,7 +5022,6 @@ dimple._timePoint = {
   series: null,
   grid: null,
   xAxis: null,
-  verticalLine: null,
   create: function(chart, series, onClick, xPos, sign, className, i, drawMarkers) {
     var g,
         group;
@@ -5190,12 +5197,6 @@ dimple._tooltipWithLine = {
     this.chart = chart;
     this.series = series;
     this.drawMarkers = drawMarkers;
-    this.timePointSelect = null;
-    this.verticalLine = null;
-    this.line = null;
-    this.marker = null;
-    this.activeLine = null;
-    this.xCoordinate = null;
 
     this.initMouseEvents();
     this.initVerticalLine();

@@ -39,6 +39,7 @@
                 seriesKeys = [],
                 onEnter = function () {
                     return function (e, shape, chart, series) {
+                        // d3.select(shape).style("opacity", 1);
                         if (series.disableLineMarkers !== true) {
                             var line = chart.lineData.filter(function(line) {
                                 return line.key[0] === e.aggField[0];
@@ -49,6 +50,7 @@
                 },
                 onLeave = function () {
                     return function (e, shape, chart, series) {
+                        // d3.select(shape).style("opacity", (series.lineMarkers || lineData.data.length < 2 ? dimple._helpers.opacity(e, chart, series) : 0));
                         if (series) {
                             dimple._removeTooltip(e, shape, chart, series);
                         }
@@ -184,7 +186,9 @@
             } else {
                 theseShapes = series.shapes.data(lineData, function (d) { return d.key; });
             }
-
+            if (chart.showMarkers === true) {
+                series.lineMarkers = true;
+            }
             // Add
             theseShapes
                 .enter()
@@ -206,8 +210,12 @@
                     }
                 })
                 .each(function (d) {
-                    // draw only first circle - for tooltip
-                    d.markerData = [d.data[0], d.data[1]];
+                    if (chart.showMarkers) {
+                        d.markerData = d.data;
+                    } else {
+                        // draw only first circle - for tooltip
+                        d.markerData = [d.data[0], d.data[1]];
+                    }
                     drawMarkers(d);
                 });
 
@@ -219,6 +227,16 @@
             // Update
             updated = chart._handleTransition(theseShapes, 0, chart)
                 .attr("d", function (d) { return d.update; })
+                .each(function (d) {
+                    // Pass line data to markers
+                    if (chart.showMarkers) {
+                        d.markerData = d.data;
+                    } else {
+                        // draw only first circle - for tooltip
+                        d.markerData = [d.data[0], d.data[1]];
+                    }
+                    drawMarkers(d);
+                })
                 .on('mouseenter', function(d) {
                     dimple._tooltipWithLine.setActiveLine.bind(dimple._tooltipWithLine)(d);
                 });
