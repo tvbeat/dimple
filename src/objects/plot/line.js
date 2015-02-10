@@ -219,7 +219,7 @@
 
             chart.lineData = lineData;
             // init tooltip
-            var initTooltip = dimple._tooltipWithLine.init.bind(dimple._tooltipWithLine)
+            var initTooltip = dimple._tooltipWithLine.init.bind(dimple._tooltipWithLine);
             initTooltip(chart, series, drawMarkers);
 
             // Update

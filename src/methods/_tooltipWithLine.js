@@ -65,7 +65,11 @@ dimple._tooltipWithLine = {
       // time point selection box
       dimple._tooltipWithLine.verticalLine = null
       if (this.chart.timePointSelectable) {
-          this.timePointSelect = dimple._timePoint.create.bind(dimple._timePoint)(this.chart, this.series, dimple._timePoint.select, -16, '+', 'timePointSelect', 0, this.drawMarkers.bind(dimple.plot.line));
+        // create vertical line with time point select
+        this.timePointSelect = dimple._timePoint.create.bind(dimple._timePoint)(this.chart, this.series, dimple._timePoint.select, -16, '+', 'timePointSelect', 0, this.drawMarkers.bind(dimple.plot.line));
+      } else {
+        // create only vertical line
+        dimple._timePoint.create.bind(dimple._timePoint)(this.chart, this.series, dimple._timePoint.select, -16, '+', 'timePointSelect', 0, this.drawMarkers.bind(dimple.plot.line), true);
       }
     } else {
       this.verticalLine = this.chart.svg.select('.verticalLine');
