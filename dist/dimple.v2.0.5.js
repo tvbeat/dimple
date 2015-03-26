@@ -388,7 +388,10 @@
                             }
                         }, this);
                     }
-                    definitions = self._orderRules.concat({ ordering : sortBy, desc : desc });
+                    definitions = self._orderRules;
+                    if (definitions.length === 0) {
+                        definitions.push({ ordering : sortBy, desc : desc });
+                    }
                     return dimple._getOrderedList(axisData, category, definitions);
                 };
 
